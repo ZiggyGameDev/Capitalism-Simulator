@@ -10,14 +10,14 @@ export const resources = {
   tomato: { id: 'tomato', name: 'Tomatoes', icon: '🍅', description: 'Family farm produce' },
   potato: { id: 'potato', name: 'Potatoes', icon: '🥔', description: 'Dug from the earth' },
 
-  wood: { id: 'wood', name: 'Wood', icon: '🪵', description: 'Chopped by hand' },
-  stone: { id: 'stone', name: 'Stone', icon: '🪨', description: 'Gathered manually' },
+  wood: { id: 'wood', name: 'Wood', icon: '🌲', description: 'Chopped by hand' },
+  stone: { id: 'stone', name: 'Stone', icon: '⛰️', description: 'Gathered manually' },
   water: { id: 'water', name: 'Water', icon: '💧', description: 'Carried in buckets' },
-  gold: { id: 'gold', name: 'Gold', icon: '🪙', description: 'Precious metal' },
+  gold: { id: 'gold', name: 'Gold', icon: '💰', description: 'Precious metal' },
 
   // Simple tools
-  stoneTools: { id: 'stoneTools', name: 'Stone Tools', icon: '🪓', description: 'Primitive implements' },
-  woodenPlank: { id: 'woodenPlank', name: 'Wooden Planks', icon: '🪚', description: 'Hand-sawn lumber' },
+  stoneTools: { id: 'stoneTools', name: 'Stone Tools', icon: '🔨', description: 'Primitive implements' },
+  woodenPlank: { id: 'woodenPlank', name: 'Wooden Planks', icon: '📦', description: 'Hand-sawn lumber' },
 
   // ========== PHASE 2: INDUSTRIAL (Mechanization Begins) ==========
   flour: { id: 'flour', name: 'Flour', icon: '🍞', description: 'Milled wheat' },
@@ -25,7 +25,7 @@ export const resources = {
 
   iron: { id: 'iron', name: 'Iron', icon: '⚙️', description: 'Smelted ore' },
   steel: { id: 'steel', name: 'Steel', icon: '🔩', description: 'Industrial metal' },
-  coal: { id: 'coal', name: 'Coal', icon: '🪨', description: 'Fuel for machines' },
+  coal: { id: 'coal', name: 'Coal', icon: '⚫', description: 'Fuel for machines' },
 
   machine: { id: 'machine', name: 'Machines', icon: '🏭', description: 'Replacing skilled labor' },
   equipment: { id: 'equipment', name: 'Equipment', icon: '🔧', description: 'Tools of efficiency' },
