@@ -5,7 +5,6 @@ import { ActivityManager } from '../managers/ActivityManager.js'
 import { UpgradeManager } from '../managers/UpgradeManager.js'
 import { WorkerManager } from '../managers/WorkerManager.js'
 import { BuildingManager } from '../managers/BuildingManager.js'
-import { RoundManager } from './RoundManager.js'
 import { levelFromXP } from '../utils/calculations.js'
 
 /**
@@ -19,7 +18,6 @@ export class GameEngine {
     this.upgradeManager = new UpgradeManager(upgradeDefinitions, this.resourceManager, this.skillManager, this.eventBus)
     this.workerManager = new WorkerManager(this.eventBus, this.resourceManager)
     this.buildingManager = new BuildingManager(this.eventBus, this.resourceManager)
-    this.roundManager = new RoundManager(this.eventBus)
     this.activityManager = new ActivityManager(activityDefinitions, this.resourceManager, this.skillManager, this.eventBus, this.upgradeManager, this.workerManager)
 
     // Listen for resource changes to track mined amounts
@@ -99,24 +97,16 @@ export class GameEngine {
    * @param {number} deltaTime - Time elapsed in ms
    */
   update(deltaTime) {
-    // Update round manager timer
-    this.roundManager.update(deltaTime)
+    // Update activities
+    this.activityManager.update(deltaTime)
 
-    // Only update activities and buildings during collection phase
-    if (this.roundManager.isCollectionPhase()) {
-      // Update activities
-      this.activityManager.update(deltaTime)
-
-      // Update buildings (construction and worker generation)
-      this.buildingManager.update(deltaTime)
-    }
+    // Update buildings (construction and worker generation)
+    this.buildingManager.update(deltaTime)
 
     // Emit tick event for UI updates
     this.eventBus.emit('game:tick', {
       deltaTime,
-      timestamp: Date.now(),
-      phase: this.roundManager.currentPhase,
-      round: this.roundManager.currentRound
+      timestamp: Date.now()
     })
   }
 
@@ -150,7 +140,6 @@ export class GameEngine {
       upgrades: this.upgradeManager.getState(),
       workers: this.workerManager.getState(),
       buildings: this.buildingManager.getState(),
-      roundManager: this.roundManager.getState(),
       lastSaveTime: Date.now()
     }
   }
@@ -198,11 +187,6 @@ export class GameEngine {
       this.buildingManager.loadState(state.buildings)
     }
 
-    // Load round manager
-    if (state.roundManager) {
-      this.roundManager.loadState(state.roundManager)
-    }
-
     // Calculate and apply offline progress if lastSaveTime exists
     if (state.lastSaveTime) {
       const now = Date.now()
@@ -218,23 +202,6 @@ export class GameEngine {
   }
 
   /**
-   * Calculate current score
-   * Score = Total Workers + (Buildings Built × 10)
-   */
-  calculateCurrentScore() {
-    const workerCount = this.resourceManager.get('basicWorker') || 0
-    const buildingCount = this.buildingManager.getTotalBuildingCount()
-    return this.roundManager.calculateScore(workerCount, buildingCount)
-  }
-
-  /**
-   * End building phase and continue to next round
-   */
-  endBuildingPhase() {
-    this.roundManager.endBuildingPhase()
-  }
-
-  /**
    * Reset the game
    */
   reset() {
@@ -244,7 +211,6 @@ export class GameEngine {
     this.upgradeManager.reset()
     this.workerManager.reset()
     this.buildingManager.reset()
-    this.roundManager.reset()
 
     // Give starting worker for new game
     this.resourceManager.add('basicWorker', 1)
@@ -395,31 +361,4 @@ export class GameEngine {
     this.eventBus.emit('game:offlineProgress', offlineResult)
   }
 
-  /**
-   * Fast-forward to end of current round
-   * Calculates and applies resources that would be earned in remaining time
-   */
-  fastForwardRound() {
-    // Get remaining time from round manager
-    const remainingTime = this.roundManager.fastForward()
-
-    if (remainingTime <= 0) {
-      return // Already in building phase or game ended
-    }
-
-    // Get current game state for simulation
-    const currentState = this.getState()
-
-    // Calculate what would be earned in remaining time
-    const fastForwardResult = this.calculateOfflineProgress(remainingTime, currentState)
-
-    // Apply the resources immediately
-    this.applyOfflineProgress(fastForwardResult)
-
-    // Emit fast-forward event with summary
-    this.eventBus.emit('game:fastForward', {
-      timeSkipped: remainingTime,
-      ...fastForwardResult
-    })
-  }
 }
