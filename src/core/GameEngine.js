@@ -212,8 +212,8 @@ export class GameEngine {
     this.workerManager.reset()
     this.buildingManager.reset()
 
-    // Give starting worker for new game
-    this.resourceManager.add('basicWorker', 1)
+    // Give starting workers for new game
+    this.resourceManager.add('basicWorker', 2)
   }
 
   /**

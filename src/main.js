@@ -41,9 +41,9 @@ function init() {
 
   setupEventListeners()
 
-  // Give new players 1 basic worker to start
+  // Give new players 2 basic workers to start
   if (!localStorage.getItem('incrementalGameSave')) {
-    game.resourceManager.add('basicWorker', 1)
+    game.resourceManager.add('basicWorker', 2)
   }
 
   // Initial render - create all elements
