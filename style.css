@@ -880,11 +880,51 @@ body {
   display: flex;
 }
 
+/* Widescreen: Show both views side by side */
+@media (min-width: 1600px) {
+  .tab-navigation {
+    display: none;
+  }
+
+  .tab-content {
+    display: flex !important;
+    flex: 1;
+  }
+
+  /* Split view container */
+  .split-view-container {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .split-view-container > .tab-content {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 /* City View Layout */
 .city-view {
   gap: 20px;
   padding: 20px;
   height: calc(100vh - 180px);
+}
+
+/* Widescreen adjustments for split view */
+@media (min-width: 1600px) {
+  .game-main {
+    min-height: calc(100vh - 200px);
+  }
+
+  .city-view {
+    height: calc(100vh - 200px);
+  }
+
+  .game-container {
+    max-width: 100%;
+    padding: 10px 20px;
+  }
 }
 
 .building-menu-panel {

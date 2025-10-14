@@ -27,8 +27,10 @@
       <button class="tab-button" data-tab="city">🏙️ City</button>
     </div>
 
-    <!-- Activities View -->
-    <div class="game-main tab-content active" data-view="activities">
+    <!-- Split View Container (for widescreen) -->
+    <div class="split-view-container">
+      <!-- Activities View -->
+      <div class="game-main tab-content active" data-view="activities">
       <!-- Skill List (Left) -->
       <div class="skill-panel">
         <h2>Skills</h2>
@@ -85,6 +87,7 @@
         <canvas id="townCanvas" class="town-canvas"></canvas>
       </div>
     </div>
+    </div> <!-- End split-view-container -->
   </div>
 
   <script type="module" src="./src/main.js"></script>

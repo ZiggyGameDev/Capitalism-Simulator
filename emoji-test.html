@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Emoji Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      padding: 40px;
+      line-height: 2;
+    }
+    .test-section {
+      background: #2a2a3e;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border: 2px solid #404060;
+    }
+    .emoji {
+      font-size: 48px;
+      margin: 10px;
+      display: inline-block;
+    }
+    .label {
+      color: #9fb1ff;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .result {
+      font-family: monospace;
+      background: #1a1a2e;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Emoji Rendering Test</h1>
+  <p>This page tests if emojis are rendering correctly in your browser.</p>
+
+  <div class="test-section">
+    <div class="label">Game Resource Emojis:</div>
+    <div class="emoji">🪵</div> Wood
+    <div class="emoji">🪨</div> Stone
+    <div class="emoji">🪙</div> Gold
+    <div class="emoji">🌾</div> Wheat
+    <div class="emoji">👷</div> Worker
+    <div class="emoji">🏠</div> House
+  </div>
+
+  <div class="test-section">
+    <div class="label">Browser Information:</div>
+    <div class="result" id="browserInfo"></div>
+  </div>
+
+  <div class="test-section">
+    <div class="label">Font Stack Test:</div>
+    <div style="font-family: 'Segoe UI';">
+      Font: Segoe UI → 🪵 🪨 🪙 👷
+    </div>
+    <div style="font-family: 'Apple Color Emoji';">
+      Font: Apple Color Emoji → 🪵 🪨 🪙 👷
+    </div>
+    <div style="font-family: 'Segoe UI Emoji';">
+      Font: Segoe UI Emoji → 🪵 🪨 🪙 👷
+    </div>
+    <div style="font-family: 'Noto Color Emoji';">
+      Font: Noto Color Emoji → 🪵 🪨 🪙 👷
+    </div>
+  </div>
+
+  <div class="test-section">
+    <div class="label">Unicode Test:</div>
+    <div class="result">
+      Wood (U+1FAB5): &#129717;<br>
+      Stone (U+1FAA8): &#129704;<br>
+      Gold (U+1FA99): &#129689;<br>
+      Wheat (U+1F33E): &#127806;<br>
+      Worker (U+1F477): &#128119;<br>
+      House (U+1F3E0): &#127968;
+    </div>
+  </div>
+
+  <div class="test-section">
+    <div class="label">Copy Test:</div>
+    <textarea id="copyTest" style="width: 100%; height: 100px; font-size: 18px; padding: 10px; background: #1a1a2e; color: #e0e0e0; border: 1px solid #404060; border-radius: 4px;">🪵 Wood: 5/50
+🪨 Stone: 5/30
+🪙 Gold: 0/100
+👷 Basic Worker: 2</textarea>
+    <p style="color: #cbd5e0; font-size: 12px;">Try copying this text and pasting it elsewhere. Can you see the emojis?</p>
+  </div>
+
+  <div class="test-section">
+    <div class="label">JavaScript Emoji Detection:</div>
+    <div class="result" id="emojiDetection"></div>
+  </div>
+
+  <script>
+    // Browser info
+    document.getElementById('browserInfo').innerHTML = `
+      User Agent: ${navigator.userAgent}<br>
+      Platform: ${navigator.platform}<br>
+      Language: ${navigator.language}<br>
+      Vendor: ${navigator.vendor}
+    `;
+
+    // Emoji detection
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.font = '20px Arial';
+
+    // Test if emoji renders
+    const text = '🪵';
+    const textWidth = ctx.measureText(text).width;
+
+    document.getElementById('emojiDetection').innerHTML = `
+      Text width for "🪵": ${textWidth}px<br>
+      ${textWidth > 0 ? '✅ Emojis appear to be supported!' : '❌ Emojis may not be supported'}<br>
+      <br>
+      Can you see colored emojis on this page? <br>
+      <span style="font-size: 24px;">👍 = YES</span> or <span style="font-size: 24px;">👎 = NO</span>
+    `;
+  </script>
+
+  <div class="test-section">
+    <div class="label">Instructions:</div>
+    <ol style="color: #cbd5e0;">
+      <li>Check if you can see colored emojis above (not just empty boxes)</li>
+      <li>Try copying the text from the textarea and pasting in Notepad</li>
+      <li>Check the JavaScript detection results</li>
+      <li>Take a screenshot if emojis are missing and send it back</li>
+    </ol>
+  </div>
+</body>
+</html>
