@@ -2,9 +2,10 @@ import { GameEngine } from './core/GameEngine.js'
 import { skills } from './data/skills.js'
 import { activities } from './data/activities.js'
 import { currencies } from './data/currencies.js'
+import { upgrades } from './data/upgrades.js'
 
 // Initialize game
-const game = new GameEngine(skills, activities)
+const game = new GameEngine(skills, activities, upgrades)
 
 // Make game available globally for debugging
 window.game = game
@@ -19,6 +20,7 @@ function init() {
   renderActivityList(selectedSkill)
   renderCurrencyTicker()
   renderActiveActivities()
+  renderUpgrades()
 
   // Subscribe to game events
   game.on('activity:completed', handleActivityCompleted)
@@ -28,6 +30,7 @@ function init() {
   game.on('currency:changed', updateCurrencyTicker)
   game.on('game:tick', handleGameTick)
   game.on('game:offlineProgress', handleOfflineProgress)
+  game.on('upgrade:purchased', handleUpgradePurchased)
 
   // Start game
   game.start()
@@ -68,6 +71,7 @@ function renderSkillList() {
       selectedSkill = skill.id
       renderSkillList()
       renderActivityList(skill.id)
+      renderUpgrades()
     })
 
     container.appendChild(skillDiv)
@@ -266,6 +270,81 @@ function handleOfflineProgress(data) {
   showNotification(`⏰ Welcome back! While offline (${timeString}): ${activitiesCount} activities completed, ${currencyCount} currencies earned!`)
 }
 
+function handleUpgradePurchased(data) {
+  renderUpgrades()
+  renderCurrencyTicker()
+  showNotification(`✨ Purchased: ${data.upgrade.name}!`)
+}
+
+function renderUpgrades() {
+  const container = document.getElementById('upgradeList')
+  container.innerHTML = ''
+
+  // Get upgrades for currently selected skill's activities
+  const skillActivities = activities.filter(a => a.skillId === selectedSkill)
+  const relevantUpgrades = []
+
+  skillActivities.forEach(activity => {
+    const activityUpgrades = game.upgradeManager.getUpgradesForActivity(activity.id)
+    relevantUpgrades.push(...activityUpgrades)
+  })
+
+  if (relevantUpgrades.length === 0) {
+    container.innerHTML = '<div class="no-activities">No upgrades available for this skill</div>'
+    return
+  }
+
+  relevantUpgrades.forEach(upgrade => {
+    const isPurchased = game.upgradeManager.isPurchased(upgrade.id)
+    const canPurchase = game.upgradeManager.canPurchase(upgrade.id)
+
+    const upgradeDiv = document.createElement('div')
+    upgradeDiv.className = `upgrade-item ${isPurchased ? 'purchased' : ''} ${!canPurchase && !isPurchased ? 'locked' : ''}`
+
+    const costText = Object.entries(upgrade.cost).map(([id, amt]) => `${currencies[id].icon} ${amt}`).join(', ')
+
+    let typeLabel = 'Other'
+    let typeClass = ''
+    if (upgrade.type === 'speed') {
+      typeLabel = 'Speed'
+      typeClass = 'speed'
+    } else if (upgrade.type === 'outputBonus') {
+      typeLabel = 'Output'
+      typeClass = 'output'
+    } else if (upgrade.type === 'costReduction') {
+      typeLabel = 'Cost'
+      typeClass = 'cost'
+    }
+
+    upgradeDiv.innerHTML = `
+      <div class="upgrade-header">
+        <div class="upgrade-name">${upgrade.name}</div>
+        <div class="upgrade-type ${typeClass}">${typeLabel}</div>
+      </div>
+      <div class="upgrade-description">${upgrade.description}</div>
+      <div class="upgrade-cost">Cost: ${costText}</div>
+      ${isPurchased ? '<div style="color: #28a745; font-size: 12px; font-weight: 600;">✓ Purchased</div>' : `
+        <button class="upgrade-buy-btn" ${!canPurchase ? 'disabled' : ''} data-upgrade="${upgrade.id}">
+          ${canPurchase ? 'Buy Upgrade' : 'Locked'}
+        </button>
+      `}
+    `
+
+    const buyBtn = upgradeDiv.querySelector('.upgrade-buy-btn')
+    if (buyBtn) {
+      buyBtn.addEventListener('click', () => {
+        try {
+          game.upgradeManager.purchase(upgrade.id)
+        } catch (e) {
+          console.error(e)
+        }
+      })
+    }
+
+    container.appendChild(upgradeDiv)
+  })
+}
+
 function showNotification(message) {
   const notification = document.createElement('div')
   notification.className = 'notification'
@@ -294,6 +373,7 @@ function loadGame() {
       renderActivityList(selectedSkill)
       renderCurrencyTicker()
       renderActiveActivities()
+      renderUpgrades()
       showNotification('📂 Game loaded!')
     } catch (e) {
       console.error('Failed to load game:', e)
@@ -309,6 +389,7 @@ function resetGame() {
     renderActivityList(selectedSkill)
     renderCurrencyTicker()
     renderActiveActivities()
+    renderUpgrades()
     showNotification('🔄 Game reset!')
   }
 }

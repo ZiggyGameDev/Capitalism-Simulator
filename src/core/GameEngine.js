@@ -2,17 +2,19 @@ import { EventBus } from './EventBus.js'
 import { CurrencyManager } from '../managers/CurrencyManager.js'
 import { SkillManager } from '../managers/SkillManager.js'
 import { ActivityManager } from '../managers/ActivityManager.js'
+import { UpgradeManager } from '../managers/UpgradeManager.js'
 import { levelFromXP } from '../utils/calculations.js'
 
 /**
  * Main game engine - coordinates all systems
  */
 export class GameEngine {
-  constructor(skillDefinitions, activityDefinitions) {
+  constructor(skillDefinitions, activityDefinitions, upgradeDefinitions = []) {
     this.eventBus = new EventBus()
     this.currencyManager = new CurrencyManager()
     this.skillManager = new SkillManager(skillDefinitions, activityDefinitions, this.eventBus)
-    this.activityManager = new ActivityManager(activityDefinitions, this.currencyManager, this.skillManager, this.eventBus)
+    this.upgradeManager = new UpgradeManager(upgradeDefinitions, this.currencyManager, this.skillManager, this.eventBus)
+    this.activityManager = new ActivityManager(activityDefinitions, this.currencyManager, this.skillManager, this.eventBus, this.upgradeManager)
 
     this.isRunning = false
     this.isPaused = false
@@ -122,6 +124,7 @@ export class GameEngine {
         activityId: a.activityId,
         autoMode: a.autoMode
       })),
+      upgrades: this.upgradeManager.getState(),
       lastSaveTime: Date.now()
     }
   }
@@ -145,6 +148,11 @@ export class GameEngine {
           this.skillManager.addXP(id, skillState.xp)
         }
       })
+    }
+
+    // Load upgrades
+    if (state.upgrades) {
+      this.upgradeManager.loadState(state.upgrades)
     }
 
     // Calculate and apply offline progress if lastSaveTime exists
@@ -175,6 +183,7 @@ export class GameEngine {
     this.currencyManager.reset()
     this.skillManager.reset()
     this.activityManager.reset()
+    this.upgradeManager.reset()
   }
 
   /**
