@@ -11,7 +11,7 @@ const game = new GameEngine(skills, activities, upgrades)
 window.game = game
 
 // DOM elements
-let selectedSkill = 'woodcutting'
+let selectedSkill = 'farming'  // First skill in expanded content
 
 // Initialize UI
 function init() {
@@ -172,6 +172,36 @@ function renderActivityList(skillId) {
 
     container.appendChild(activityDiv)
   })
+
+  // Auto-start the first FREE activity if nothing is running for this skill
+  const hasActiveSkillActivities = game.activityManager.getActiveActivities()
+    .some(state => {
+      const activity = activities.find(a => a.id === state.activityId)
+      return activity && activity.skillId === skillId
+    })
+
+  if (!hasActiveSkillActivities) {
+    // Find first unlocked FREE activity
+    const firstFreeActivity = skillActivities.find(activity => {
+      const unlocked = game.skillManager.isActivityUnlocked(activity.id)
+      const isFree = Object.keys(activity.inputs).length === 0
+      const canStart = game.activityManager.canStart(activity.id)
+      return unlocked && isFree && canStart
+    })
+
+    if (firstFreeActivity) {
+      try {
+        game.activityManager.start(firstFreeActivity.id)
+        // Re-render to show the started activity
+        setTimeout(() => {
+          renderActivityList(selectedSkill)
+          renderActiveActivities()
+        }, 100)
+      } catch (e) {
+        console.error('Failed to auto-start activity:', e)
+      }
+    }
+  }
 }
 
 function renderCurrencyTicker() {

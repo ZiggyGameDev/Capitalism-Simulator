@@ -56,7 +56,7 @@ export class ActivityManager {
       startTime: now,
       duration: effectiveDuration * 1000,  // Convert to ms
       progress: 0,
-      autoMode: options.autoMode || false
+      autoMode: options.autoMode !== undefined ? options.autoMode : true  // Auto-mode ON by default
     })
 
     if (this.eventBus) {

@@ -127,7 +127,7 @@ describe('ActivityManager', () => {
     })
 
     it('should complete activity when time elapsed', () => {
-      am.start('chopTree')
+      am.start('chopTree', { autoMode: false })  // Disable auto-mode for test
       const completeSpy = vi.fn()
       eventBus.on('activity:completed', completeSpy)
 
@@ -364,7 +364,7 @@ describe('ActivityManager', () => {
         workerManager.addWorkers(5)
         workerManager.assign('chopTree', 3)
 
-        am.start('chopTree')
+        am.start('chopTree', { autoMode: false })  // Disable auto-mode for test
         am.update(2000)  // Normal duration
 
         // Should not be complete yet (needs 4 seconds with workers)
