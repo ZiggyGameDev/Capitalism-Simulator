@@ -4,6 +4,9 @@ import { SkillManager } from '../managers/SkillManager.js'
 import { ActivityManager } from '../managers/ActivityManager.js'
 import { UpgradeManager } from '../managers/UpgradeManager.js'
 import { WorkerManager } from '../managers/WorkerManager.js'
+import { ResourceNodeManager } from '../managers/ResourceNodeManager.js'
+import { WorkerEntityManager } from '../managers/WorkerEntityManager.js'
+import { resourceNodeDefinitions } from '../data/resource-nodes.js'
 import { levelFromXP } from '../utils/calculations.js'
 
 /**
@@ -17,6 +20,10 @@ export class GameEngine {
     this.upgradeManager = new UpgradeManager(upgradeDefinitions, this.currencyManager, this.skillManager, this.eventBus)
     this.workerManager = new WorkerManager(this.eventBus, this.currencyManager)
     this.activityManager = new ActivityManager(activityDefinitions, this.currencyManager, this.skillManager, this.eventBus, this.upgradeManager, this.workerManager)
+
+    // New visual worker systems
+    this.resourceNodeManager = new ResourceNodeManager(resourceNodeDefinitions, this.eventBus)
+    this.workerEntityManager = new WorkerEntityManager(this.eventBus, this.currencyManager)
 
     this.isRunning = false
     this.isPaused = false
@@ -86,8 +93,15 @@ export class GameEngine {
    * @param {number} deltaTime - Time elapsed in ms
    */
   update(deltaTime) {
-    // Update activities (most important)
+    // Update activities (old system - still active)
     this.activityManager.update(deltaTime)
+
+    // Update new visual worker systems
+    this.resourceNodeManager.update(deltaTime)
+    this.workerEntityManager.update(deltaTime, this.resourceNodeManager.nodes)
+
+    // Sync worker entities with currency (spawn/despawn workers based on owned workers)
+    this.workerEntityManager.syncWithCurrency(this.currencyManager)
 
     // Emit tick event for UI updates
     this.eventBus.emit('game:tick', {
@@ -124,6 +138,8 @@ export class GameEngine {
       skills: this.skillManager.getAllSkills(),
       upgrades: this.upgradeManager.getState(),
       workers: this.workerManager.getState(),
+      resourceNodes: this.resourceNodeManager.getState(),
+      workerEntities: this.workerEntityManager.getState(),
       lastSaveTime: Date.now()
     }
   }
@@ -154,9 +170,19 @@ export class GameEngine {
       this.upgradeManager.loadState(state.upgrades)
     }
 
-    // Load workers
+    // Load workers (old system)
     if (state.workers) {
       this.workerManager.loadState(state.workers)
+    }
+
+    // Load resource nodes (new system)
+    if (state.resourceNodes) {
+      this.resourceNodeManager.loadState(state.resourceNodes)
+    }
+
+    // Load worker entities (new system)
+    if (state.workerEntities) {
+      this.workerEntityManager.loadState(state.workerEntities, this.currencyManager)
     }
 
     // Calculate and apply offline progress if lastSaveTime exists
@@ -182,6 +208,8 @@ export class GameEngine {
     this.activityManager.reset()
     this.upgradeManager.reset()
     this.workerManager.reset()
+    this.resourceNodeManager.reset()
+    this.workerEntityManager.reset()
   }
 
   /**
