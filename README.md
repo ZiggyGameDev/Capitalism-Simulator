@@ -9,6 +9,7 @@ A modern, feature-rich incremental/idle game built with vanilla JavaScript follo
 - **14 Activities** with time-based completion
 - **15 Currency Types** - everything is a currency (no inventory complexity)
 - **Auto-Mode** for hands-free grinding
+- **Offline Progress** - earn resources while away (up to 8 hours)
 - **Save/Load System** with localStorage persistence
 - **Production Chains** - advanced activities require outputs from others
 
@@ -20,11 +21,12 @@ A modern, feature-rich incremental/idle game built with vanilla JavaScript follo
 - 🐕 **Dog Handling** - Find and train dogs
 
 ### Technical Excellence
-- ✅ **114 Unit Tests** with 100% pass rate
+- ✅ **127 Unit Tests** with 100% pass rate
 - ✅ **Test-Driven Development** throughout
 - ✅ **Event-Driven Architecture** with pub/sub
 - ✅ **Separation of Concerns** - clean architecture
 - ✅ **Real-Time Updates** with game loop
+- ✅ **Offline Progress** - up to 8 hours simulation
 - ✅ **Responsive Design** - works on mobile
 
 ## 🚀 Getting Started
@@ -85,14 +87,15 @@ npm run test:e2e
 ## 📊 Test Coverage
 
 ```
-Test Files: 5 passed (5)
-Tests:      114 passed (114)
+Test Files: 6 passed (6)
+Tests:      127 passed (127)
 
 ✅ XP Calculations (17 tests)
 ✅ EventBus (10 tests)
 ✅ CurrencyManager (29 tests)
 ✅ SkillManager (25 tests)
 ✅ ActivityManager (33 tests)
+✅ Offline Progress (13 tests)
 ```
 
 ## 🏗️ Architecture
@@ -199,9 +202,9 @@ export const currencies = {
 
 ## 📈 Future Enhancements
 
+- [x] ~~Offline progress calculation~~ ✅ Completed!
 - [ ] Upgrade system for boosting activities
 - [ ] More skills (Smithing, Crafting, Alchemy, Trading)
-- [ ] Offline progress calculation
 - [ ] Achievement system
 - [ ] Prestige/rebirth mechanics
 - [ ] Visual effects and animations
