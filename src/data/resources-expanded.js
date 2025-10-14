@@ -1,9 +1,9 @@
 /**
- * Expanded currency definitions - The Cost of Progress
+ * Expanded resource definitions - The Cost of Progress
  * Everything is a commodity in late-stage capitalism
  */
 
-export const currencies = {
+export const resources = {
   // ========== PHASE 1: ORGANIC (Human Labor) ==========
   wheat: { id: 'wheat', name: 'Wheat', icon: '🌾', description: 'Grown by human hands' },
   corn: { id: 'corn', name: 'Corn', icon: '🌽', description: 'Manual harvest' },

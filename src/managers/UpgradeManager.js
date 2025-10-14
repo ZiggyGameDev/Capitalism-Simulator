@@ -2,9 +2,9 @@
  * Manages upgrade purchases and effects
  */
 export class UpgradeManager {
-  constructor(upgradeDefinitions, currencyManager, skillManager, eventBus) {
+  constructor(upgradeDefinitions, resourceManager, skillManager, eventBus) {
     this.upgradeDefinitions = upgradeDefinitions || []
-    this.currencyManager = currencyManager
+    this.resourceManager = resourceManager
     this.skillManager = skillManager
     this.eventBus = eventBus
     this.purchased = []
@@ -27,9 +27,9 @@ export class UpgradeManager {
       return false
     }
 
-    // Check currency costs
-    for (const [currencyId, amount] of Object.entries(upgrade.cost)) {
-      if (this.currencyManager.get(currencyId) < amount) {
+    // Check resource costs
+    for (const [resourceId, amount] of Object.entries(upgrade.cost)) {
+      if (this.resourceManager.get(resourceId) < amount) {
         return false
       }
     }
@@ -57,8 +57,8 @@ export class UpgradeManager {
     const upgrade = this.upgradeDefinitions.find(u => u.id === upgradeId)
 
     // Deduct costs
-    for (const [currencyId, amount] of Object.entries(upgrade.cost)) {
-      this.currencyManager.subtract(currencyId, amount)
+    for (const [resourceId, amount] of Object.entries(upgrade.cost)) {
+      this.resourceManager.subtract(resourceId, amount)
     }
 
     // Add to purchased list
@@ -115,7 +115,7 @@ export class UpgradeManager {
   /**
    * Get output bonuses for an activity
    * @param {string} activityId - Activity identifier
-   * @returns {Object} Output bonuses {currencyId: amount}
+   * @returns {Object} Output bonuses {resourceId: amount}
    */
   getOutputBonus(activityId) {
     const outputUpgrades = this.upgradeDefinitions.filter(u =>
@@ -127,8 +127,8 @@ export class UpgradeManager {
     const bonus = {}
 
     for (const upgrade of outputUpgrades) {
-      for (const [currencyId, amount] of Object.entries(upgrade.value)) {
-        bonus[currencyId] = (bonus[currencyId] || 0) + amount
+      for (const [resourceId, amount] of Object.entries(upgrade.value)) {
+        bonus[resourceId] = (bonus[resourceId] || 0) + amount
       }
     }
 

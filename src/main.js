@@ -1,7 +1,9 @@
 import { GameEngine } from './core/GameEngine.js'
+import { ActivitySimulation } from './simulation/ActivitySimulation.js'
+import { TownRenderer } from './rendering/TownRenderer.js'
 import { skills } from './data/skills-expanded.js'
 import { activities } from './data/activities-expanded.js'
-import { currencies } from './data/currencies-expanded.js'
+import { resources } from './data/resources-expanded.js'
 import { upgrades } from './data/upgrades.js'
 
 // Initialize game
@@ -12,14 +14,31 @@ window.game = game
 
 // Element caches for fast updates (no re-rendering!)
 const activityElements = new Map() // activityId -> { root, progressBar, progressFill, status, ... }
+const activitySimulations = new Map() // activityId -> ActivitySimulation instance
+
+// Expose for testing
+window.activitySimulations = activitySimulations
 const skillElements = new Map() // skillId -> { root, xpBar, xpFill, level }
-const currencyElements = new Map() // currencyId -> element
+const resourceElements = new Map() // resourceId -> element
 const activeActivityElements = new Map() // activityId -> { root, progressFill, status }
+
+// Town renderer
+let townRenderer = null
+
+// Status bar elements
+const statusElements = {
+  roundCounter: null,
+  phaseIndicator: null,
+  timerDisplay: null,
+  scoreDisplay: null,
+  timerProgress: null
+}
 
 // State
 let selectedSkill = 'farming'  // First skill in expanded content
 let lastUnlockState = new Map() // Track which activities are unlocked to detect changes
 let autoSaveInterval = null
+let currentTab = 'activities' // 'activities' or 'city'
 
 // Initialize UI
 function init() {
@@ -31,31 +50,69 @@ function init() {
 
   setupEventListeners()
 
+  // Cache status bar elements
+  statusElements.roundCounter = document.getElementById('roundCounter')
+  statusElements.phaseIndicator = document.getElementById('phaseIndicator')
+  statusElements.timerDisplay = document.getElementById('timerDisplay')
+  statusElements.scoreDisplay = document.getElementById('scoreDisplay')
+  statusElements.timerProgress = document.getElementById('timerProgress')
+
+  // Give new players 1 basic worker to start
+  if (!localStorage.getItem('incrementalGameSave')) {
+    game.resourceManager.add('basicWorker', 1)
+  }
+
   // Initial render - create all elements
   buildSkillList()
   buildActivityList(selectedSkill)
-  buildCurrencyTicker()
+  buildResourceTicker()
   buildActiveActivitiesPanel()
   updateActiveActivitiesPanel() // Populate with initial content
   buildUpgradeList()
   buildWorkerPanel()
   updateWorkerPanel() // Populate with initial content
+  buildBuildingMenu() // Build city building menu
+
+  // Initialize town renderer
+  const townCanvas = document.getElementById('townCanvas')
+  if (townCanvas) {
+    townRenderer = new TownRenderer(townCanvas, game)
+    townRenderer.render() // Initial render
+  }
 
   // Subscribe to game events - now they just update, not rebuild
   game.on('activity:completed', handleActivityCompleted)
   game.on('activity:started', handleActivityStarted)
   game.on('activity:stopped', handleActivityStopped)
   game.on('skill:levelup', handleSkillLevelup)
-  game.on('currency:changed', handleCurrencyChanged)
+  game.on('resource:changed', handleResourceChanged)
   game.on('game:tick', handleGameTick)
   game.on('game:offlineProgress', handleOfflineProgress)
   game.on('upgrade:purchased', handleUpgradePurchased)
   game.on('worker:assigned', handleWorkerChanged)
   game.on('worker:unassigned', handleWorkerChanged)
+  game.on('round:phase_changed', handlePhaseChanged)
+  game.on('game:fastForward', handleFastForward)
+  game.on('round:game_ended', handleGameEnded)
+  game.on('building:construction_started', handleBuildingEvent)
+  game.on('building:construction_complete', handleBuildingEvent)
+  game.on('building:worker_generated', handleBuildingEvent)
+  game.on('building:training_started', handleBuildingEvent)
+  game.on('building:training_complete', handleBuildingEvent)
+
+  // Restart button
+  const restartBtn = document.getElementById('restartBtn')
+  if (restartBtn) {
+    restartBtn.addEventListener('click', restartGame)
+  }
 
   // Start game
   game.start()
   console.log('✅ [Game] Started successfully')
+
+  // Start activity simulation render loop
+  startSimulationRenderLoop()
+  console.log('🎨 [Renderer] Activity simulations initialized')
 
   // Clear any existing auto-save interval
   if (autoSaveInterval) {
@@ -77,12 +134,20 @@ function cleanupGameListeners() {
   game.off('activity:started', handleActivityStarted)
   game.off('activity:stopped', handleActivityStopped)
   game.off('skill:levelup', handleSkillLevelup)
-  game.off('currency:changed', handleCurrencyChanged)
+  game.off('resource:changed', handleResourceChanged)
   game.off('game:tick', handleGameTick)
   game.off('game:offlineProgress', handleOfflineProgress)
   game.off('upgrade:purchased', handleUpgradePurchased)
   game.off('worker:assigned', handleWorkerChanged)
   game.off('worker:unassigned', handleWorkerChanged)
+  game.off('round:phase_changed', handlePhaseChanged)
+  game.off('game:fastForward', handleFastForward)
+  game.off('round:game_ended', handleGameEnded)
+  game.off('building:construction_started', handleBuildingEvent)
+  game.off('building:construction_complete', handleBuildingEvent)
+  game.off('building:worker_generated', handleBuildingEvent)
+  game.off('building:training_started', handleBuildingEvent)
+  game.off('building:training_complete', handleBuildingEvent)
 }
 
 // Export cleanup function for testing and external use
@@ -94,6 +159,55 @@ function setupEventListeners() {
 
   // Event delegation for worker buttons (set up once)
   document.getElementById('activityList').addEventListener('click', handleActivityClick)
+
+  // Tab switching
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+      const tab = button.dataset.tab
+      switchTab(tab)
+    })
+  })
+
+  // Continue button
+  const continueBtn = document.getElementById('continueBtn')
+  if (continueBtn) {
+    continueBtn.addEventListener('click', () => {
+      game.endBuildingPhase()
+    })
+  }
+
+  // Fast-forward button
+  const fastForwardBtn = document.getElementById('fastForwardBtn')
+  if (fastForwardBtn) {
+    fastForwardBtn.addEventListener('click', () => {
+      game.fastForwardRound()
+    })
+  }
+
+  // Back to activities button
+  const backToActivitiesBtn = document.getElementById('backToActivitiesBtn')
+  if (backToActivitiesBtn) {
+    backToActivitiesBtn.addEventListener('click', () => {
+      switchTab('activities')
+    })
+  }
+}
+
+/**
+ * Switch between activities and city tabs
+ */
+function switchTab(tabName) {
+  currentTab = tabName
+
+  // Update tab buttons
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabName)
+  })
+
+  // Update tab content visibility
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.toggle('active', content.dataset.view === tabName)
+  })
 }
 
 // ============================================================================
@@ -160,6 +274,12 @@ function buildActivityList(skillId) {
 
   const skillActivities = activities.filter(a => a.skillId === skillId)
 
+  // Clean up old simulations
+  activitySimulations.forEach(simulation => {
+    simulation.destroy()
+  })
+  activitySimulations.clear()
+
   // Clear and rebuild
   container.innerHTML = `<h2>${skill.icon} ${skill.name}</h2>`
   activityElements.clear()
@@ -186,14 +306,14 @@ function createActivityElement(activity) {
   const inputsHTML = Object.keys(activity.inputs).length === 0
     ? '<span class="free-label">FREE</span>'
     : Object.entries(activity.inputs).map(([id, amt]) => {
-        const currency = currencies[id]
-        return `<span class="input-${id}">${currency.icon} ${currency.name} × ${amt}</span>`
+        const resource = resources[id]
+        return `<span class="input-${id}">${resource.icon} ${resource.name} × ${amt}</span>`
       }).join(', ')
 
   // Build outputs text
   const outputsHTML = Object.entries(activity.outputs).map(([id, amt]) => {
-    const currency = currencies[id]
-    return `${currency.icon} ${currency.name} × ${amt}`
+    const resource = resources[id]
+    return `${resource.icon} ${resource.name} × ${amt}`
   }).join(', ')
 
   // Build worker controls
@@ -213,20 +333,21 @@ function createActivityElement(activity) {
     <div class="activity-meta">
       <span class="activity-duration"></span> | +${activity.xpGained} XP
     </div>
-    <div class="activity-progress-bar">
-      <div class="activity-progress-fill" style="width: 0%"></div>
+    <div class="activity-resources-info">
+      <span class="activity-current-resources"></span>
+      <span class="activity-resources-per-min"></span>
     </div>
-    <div class="activity-status"></div>
+    <canvas class="activity-simulation-canvas" data-activity="${activity.id}" style="width: 100%; height: 80px; border-radius: 4px;"></canvas>
     ${workerHTML}
   `
 
   // Cache all the elements we'll need to update
   activityElements.set(activity.id, {
     root: activityDiv,
-    progressFill: activityDiv.querySelector('.activity-progress-fill'),
-    status: activityDiv.querySelector('.activity-status'),
     haltedWarning: activityDiv.querySelector('.activity-halted-warning'),
     duration: activityDiv.querySelector('.activity-duration'),
+    currentResources: activityDiv.querySelector('.activity-current-resources'),
+    resourcesPerMin: activityDiv.querySelector('.activity-resources-per-min'),
     inputSpans: Object.keys(activity.inputs).reduce((acc, id) => {
       acc[id] = activityDiv.querySelector(`.input-${id}`)
       return acc
@@ -250,6 +371,16 @@ function createActivityElement(activity) {
 
   cached.removeAllBtn = activityDiv.querySelector('.worker-btn-remove-all')
 
+  // Create activity simulation if unlocked
+  if (unlocked) {
+    const canvas = activityDiv.querySelector('.activity-simulation-canvas')
+    if (canvas) {
+      const simulation = new ActivitySimulation(canvas, activity, game.workerManager, game.resourceManager)
+      activitySimulations.set(activity.id, simulation)
+      cached.simulation = simulation
+    }
+  }
+
   // Initial update
   updateActivityState(activity.id)
 
@@ -268,13 +399,13 @@ function createWorkerControlsHTML(activity, unlocked) {
   `
 
   game.workerManager.workerTypes.forEach(workerType => {
-    const total = game.currencyManager.get(workerType.id) || 0
+    const total = game.resourceManager.get(workerType.id) || 0
     const assigned = game.workerManager.getAssignment(activity.id, workerType.id)
 
     if (total > 0 || assigned > 0 || workerType.id === 'basicWorker') {
       html += `
         <div class="worker-assignment-row" data-worker-row="${workerType.id}">
-          <span class="worker-type-name">${currencies[workerType.id].icon} ${currencies[workerType.id].name} (<span class="worker-total">${total}</span>)</span>
+          <span class="worker-type-name">${resources[workerType.id].icon} ${resources[workerType.id].name} (<span class="worker-total">${total}</span>)</span>
           <div class="worker-controls">
             <button class="worker-btn-minus" data-activity="${activity.id}" data-worker="${workerType.id}">-</button>
             <span class="worker-count">${assigned}</span>
@@ -289,39 +420,39 @@ function createWorkerControlsHTML(activity, unlocked) {
   return html
 }
 
-function buildCurrencyTicker() {
+function buildResourceTicker() {
   const container = document.getElementById('currencyTicker')
   container.innerHTML = ''
-  currencyElements.clear()
+  resourceElements.clear()
 
-  // Create elements for all currencies that exist
-  const allCurrencies = game.currencyManager.getAll()
-  Object.entries(allCurrencies).forEach(([id, amount]) => {
+  // Create elements for all resources that exist
+  const allResources = game.resourceManager.getAll()
+  Object.entries(allResources).forEach(([id, amount]) => {
     if (amount > 0) {
-      createCurrencyElement(id, amount)
+      createResourceElement(id, amount)
     }
   })
 
-  if (Object.keys(allCurrencies).filter(id => allCurrencies[id] > 0).length === 0) {
-    container.innerHTML = '<div class="currency-item">No currencies yet - start gathering!</div>'
+  if (Object.keys(allResources).filter(id => allResources[id] > 0).length === 0) {
+    container.innerHTML = '<div class="currency-item">No resources yet - start gathering!</div>'
   }
 }
 
-function createCurrencyElement(currencyId, amount) {
+function createResourceElement(resourceId, amount) {
   const container = document.getElementById('currencyTicker')
-  const currency = currencies[currencyId]
+  const resource = resources[resourceId]
 
-  if (!currency) {
-    console.error(`Currency ${currencyId} not found in currencies data`)
+  if (!resource) {
+    console.error(`Resource ${resourceId} not found in resources data`)
     return
   }
 
   const div = document.createElement('div')
   div.className = 'currency-item'
-  div.dataset.currencyId = currencyId
-  div.innerHTML = `${currency.icon} ${currency.name}: <span class="currency-amount">${Math.floor(amount)}</span>`
+  div.dataset.currencyId = resourceId
+  div.innerHTML = `${resource.icon} ${resource.name}: <span class="currency-amount">${Math.floor(amount)}</span>`
 
-  currencyElements.set(currencyId, {
+  resourceElements.set(resourceId, {
     root: div,
     amount: div.querySelector('.currency-amount')
   })
@@ -359,7 +490,7 @@ function buildUpgradeList() {
     const upgradeDiv = document.createElement('div')
     upgradeDiv.className = `upgrade-item ${isPurchased ? 'purchased' : ''} ${!canPurchase && !isPurchased ? 'locked' : ''}`
 
-    const costText = Object.entries(upgrade.cost).map(([id, amt]) => `${currencies[id].icon} ${amt}`).join(', ')
+    const costText = Object.entries(upgrade.cost).map(([id, amt]) => `${resources[id].icon} ${amt}`).join(', ')
 
     let typeLabel = 'Other'
     let typeClass = ''
@@ -408,6 +539,108 @@ function buildWorkerPanel() {
   container.innerHTML = '<h3>Workers</h3><div id="workerSummaryList"></div>'
 }
 
+function buildBuildingMenu() {
+  const container = document.getElementById('buildingMenu')
+  const slotsInfo = document.getElementById('buildingSlots')
+
+  if (!container) return
+
+  // Update slots display
+  if (slotsInfo) {
+    const usedSlots = game.buildingManager.usedSlots
+    const availableSlots = game.buildingManager.availableSlots
+    slotsInfo.textContent = `${usedSlots}/${availableSlots} Slots Used`
+  }
+
+  // Clear container
+  container.innerHTML = ''
+
+  // Get all building types
+  const buildingTypes = game.buildingManager.buildingTypes
+
+  buildingTypes.forEach(buildingType => {
+    const card = createBuildingCard(buildingType)
+    container.appendChild(card)
+  })
+}
+
+function createBuildingCard(buildingType) {
+  const card = document.createElement('div')
+  card.className = 'building-card'
+  card.dataset.buildingId = buildingType.id
+
+  // Check if unlocked
+  const isUnlocked = game.buildingManager.isUnlocked(buildingType)
+  if (!isUnlocked) {
+    card.classList.add('locked')
+  }
+
+  // Get current count and cost
+  const currentCount = game.buildingManager.getBuildings(buildingType.id).length
+  const cost = game.buildingManager.getBuildingCost(buildingType.id)
+  const canBuildResult = game.buildingManager.canBuild(buildingType.id)
+
+  // Build cost HTML with current amounts
+  const costHTML = Object.entries(cost).map(([resourceId, amount]) => {
+    const current = game.resourceManager.get(resourceId) || 0
+    const canAfford = current >= amount
+    const resource = resources[resourceId]
+    return `<div class="cost-item ${canAfford ? '' : 'insufficient'}">
+      ${resource.icon} ${Math.floor(current)}/${amount}
+    </div>`
+  }).join('')
+
+  // Unlock condition text
+  let unlockText = ''
+  if (!isUnlocked && buildingType.unlockCondition) {
+    const condition = buildingType.unlockCondition
+    if (condition.type === 'resource_mined') {
+      const mined = game.buildingManager.resourcesMined[condition.resource] || 0
+      unlockText = `<div class="unlock-condition">🔒 Mine ${condition.amount} ${condition.resource} (${Math.floor(mined)}/${condition.amount})</div>`
+    } else if (condition.type === 'buildings_built') {
+      const built = game.buildingManager.getTotalBuildingCount()
+      unlockText = `<div class="unlock-condition">🔒 Build ${condition.count} buildings (${built}/${condition.count})</div>`
+    }
+  }
+
+  card.innerHTML = `
+    <div class="building-header">
+      <div class="building-emoji">${buildingType.emoji}</div>
+      <div class="building-info">
+        <h3>${buildingType.name}</h3>
+        <p>${buildingType.description}</p>
+      </div>
+    </div>
+    <div class="building-count">Built: ${currentCount}/${buildingType.maxCount}</div>
+    ${unlockText}
+    <div class="building-cost">
+      ${costHTML}
+    </div>
+    <div class="building-construction-time">⏱️ ${buildingType.constructionTime}s to build</div>
+    <div class="building-actions">
+      <button class="btn-build" data-building="${buildingType.id}" ${!canBuildResult.canBuild ? 'disabled' : ''}>
+        ${canBuildResult.canBuild ? 'Build' : canBuildResult.reason}
+      </button>
+    </div>
+  `
+
+  // Add event listener to build button
+  const buildBtn = card.querySelector('.btn-build')
+  if (buildBtn && canBuildResult.canBuild) {
+    buildBtn.addEventListener('click', () => {
+      try {
+        game.buildingManager.startConstruction(buildingType.id)
+        showNotification(`🏗️ Started building ${buildingType.name}!`)
+        buildBuildingMenu() // Rebuild to update UI
+      } catch (e) {
+        showNotification(`❌ ${e.message}`)
+      }
+    })
+  }
+
+  return card
+}
+
 // ============================================================================
 // UPDATE FUNCTIONS - Fast property updates only
 // ============================================================================
@@ -420,7 +653,6 @@ function updateActivityState(activityId) {
   if (!activity) return
 
   const isRunning = game.activityManager.getActiveActivities().some(a => a.activityId === activityId)
-  const progress = game.activityManager.getProgress(activityId)
   const isAutomated = game.workerManager.isAutomated(activityId)
   const canRun = game.activityManager.canRun(activityId)
   const isHalted = isAutomated && !canRun
@@ -428,10 +660,6 @@ function updateActivityState(activityId) {
   // Update classes
   cached.root.classList.toggle('running', isRunning)
   cached.root.classList.toggle('halted', isHalted)
-
-  // Update progress
-  cached.progressFill.style.width = isRunning ? `${progress * 100}%` : '0%'
-  cached.status.textContent = isRunning ? `${Math.floor(progress * 100)}%` : ''
 
   // Update halted warning
   cached.haltedWarning.textContent = isHalted ? '⚠️ Production halted - insufficient resources' : ''
@@ -451,13 +679,37 @@ function updateActivityState(activityId) {
   }
 
   // Update input highlighting
-  Object.entries(cached.inputSpans).forEach(([currencyId, span]) => {
+  Object.entries(cached.inputSpans).forEach(([resourceId, span]) => {
     if (!span) return
-    const requiredAmount = activity.inputs[currencyId] || 0
-    const currentAmount = game.currencyManager.get(currencyId)
+    const requiredAmount = activity.inputs[resourceId] || 0
+    const currentAmount = game.resourceManager.get(resourceId)
     const canAfford = currentAmount >= requiredAmount
     span.classList.toggle('insufficient', !canAfford && isAutomated)
   })
+
+  // Update resource information
+  if (cached.currentResources && cached.resourcesPerMin) {
+    // Show current count of output resources
+    const outputResourceTexts = Object.entries(activity.outputs).map(([resourceId, amount]) => {
+      const current = game.resourceManager.get(resourceId)
+      const resource = resources[resourceId]
+      return `${resource.icon} ${Math.floor(current)}`
+    }).join(' ')
+    cached.currentResources.textContent = outputResourceTexts ? `Have: ${outputResourceTexts}` : ''
+
+    // Calculate resources per minute
+    if (isAutomated && isFinite(effectiveDuration) && effectiveDuration > 0) {
+      const cyclesPerMinute = 60 / effectiveDuration
+      const resourcesPerMin = Object.entries(activity.outputs).map(([resourceId, amount]) => {
+        const perMin = Math.round(amount * cyclesPerMinute * 10) / 10
+        const resource = resources[resourceId]
+        return `${resource.icon} ${perMin}/min`
+      }).join(' ')
+      cached.resourcesPerMin.textContent = resourcesPerMin
+    } else {
+      cached.resourcesPerMin.textContent = ''
+    }
+  }
 
   // Update worker controls
   const workerAssignments = game.workerManager.getActivityAssignments(activityId)
@@ -480,15 +732,6 @@ function updateActivityState(activityId) {
   })
 }
 
-function updateActivityProgress(activityId) {
-  const cached = activityElements.get(activityId)
-  if (!cached) return
-
-  const progress = game.activityManager.getProgress(activityId)
-  cached.progressFill.style.width = `${progress * 100}%`
-  cached.status.textContent = `${Math.floor(progress * 100)}%`
-}
-
 function updateSkillXP(skillId) {
   const cached = skillElements.get(skillId)
   if (!cached) return
@@ -506,22 +749,22 @@ function updateSkillSelection() {
   })
 }
 
-function updateCurrencyAmount(currencyId) {
-  const amount = game.currencyManager.get(currencyId)
+function updateResourceAmount(resourceId) {
+  const amount = game.resourceManager.get(resourceId)
 
   // Create element if it doesn't exist and amount > 0
-  if (!currencyElements.has(currencyId) && amount > 0) {
-    // Clear "No currencies" message if it exists
+  if (!resourceElements.has(resourceId) && amount > 0) {
+    // Clear "No resources" message if it exists
     const container = document.getElementById('currencyTicker')
-    const noCurrenciesMsg = container.querySelector('.currency-item:not([data-currency-id])')
-    if (noCurrenciesMsg) {
-      noCurrenciesMsg.remove()
+    const noResourcesMsg = container.querySelector('.currency-item:not([data-currency-id])')
+    if (noResourcesMsg) {
+      noResourcesMsg.remove()
     }
 
-    createCurrencyElement(currencyId, amount)
+    createResourceElement(resourceId, amount)
   }
 
-  const cached = currencyElements.get(currencyId)
+  const cached = resourceElements.get(resourceId)
   if (!cached) return
 
   // Update or remove
@@ -529,12 +772,12 @@ function updateCurrencyAmount(currencyId) {
     cached.amount.textContent = Math.floor(amount)
   } else {
     cached.root.remove()
-    currencyElements.delete(currencyId)
+    resourceElements.delete(resourceId)
 
-    // Show "No currencies" message if no currencies left
+    // Show "No resources" message if no resources left
     const container = document.getElementById('currencyTicker')
-    if (currencyElements.size === 0) {
-      container.innerHTML = '<div class="currency-item">No currencies yet - start gathering!</div>'
+    if (resourceElements.size === 0) {
+      container.innerHTML = '<div class="currency-item">No resources yet - start gathering!</div>'
     }
   }
 }
@@ -574,8 +817,8 @@ function updateActiveActivitiesPanel() {
     } else {
       // Create new
       const outputsText = Object.entries(activity.outputs).map(([id, amt]) => {
-        const currency = currencies[id]
-        return `${currency.icon}×${amt}`
+        const resource = resources[id]
+        return `${resource.icon}×${amt}`
       }).join(' ')
 
       const div = document.createElement('div')
@@ -610,7 +853,7 @@ function updateWorkerSummary() {
 
   let hasWorkers = false
   game.workerManager.workerTypes.forEach(workerType => {
-    const total = game.currencyManager.get(workerType.id) || 0
+    const total = game.resourceManager.get(workerType.id) || 0
     const assigned = game.workerManager.getAssignedWorkers(workerType.id)
     const available = total - assigned
 
@@ -619,7 +862,7 @@ function updateWorkerSummary() {
       const availableClass = available === 0 ? 'worker-all-assigned' : ''
       container.innerHTML += `
         <div class="worker-summary-line ${availableClass}">
-          ${currencies[workerType.id].icon} <span class="worker-available">${available}</span>/<span class="worker-total">${total}</span>
+          ${resources[workerType.id].icon} <span class="worker-available">${available}</span>/<span class="worker-total">${total}</span>
         </div>
       `
     }
@@ -638,7 +881,7 @@ function updateWorkerPanel() {
 
   let hasWorkers = false
   game.workerManager.workerTypes.forEach(workerType => {
-    const total = game.currencyManager.get(workerType.id) || 0
+    const total = game.resourceManager.get(workerType.id) || 0
     const assigned = game.workerManager.getAssignedWorkers(workerType.id)
     const available = total - assigned
 
@@ -646,8 +889,8 @@ function updateWorkerPanel() {
       hasWorkers = true
       container.innerHTML += `
         <div class="worker-summary-item">
-          <span class="worker-summary-icon">${currencies[workerType.id].icon}</span>
-          <span class="worker-summary-name">${currencies[workerType.id].name}</span>
+          <span class="worker-summary-icon">${resources[workerType.id].icon}</span>
+          <span class="worker-summary-name">${resources[workerType.id].name}</span>
           <span class="worker-summary-stats">${total} total (${assigned} assigned, ${available} available)</span>
         </div>
       `
@@ -730,11 +973,11 @@ function handleSkillLevelup(data) {
   showNotification(`🎉 ${data.skillId.toUpperCase()} reached level ${data.newLevel}!`)
 }
 
-function handleCurrencyChanged(data) {
-  // Update all currencies efficiently
-  const allCurrencies = game.currencyManager.getAll()
-  Object.keys(allCurrencies).forEach(currencyId => {
-    updateCurrencyAmount(currencyId)
+function handleResourceChanged(data) {
+  // Update all resources efficiently
+  const allResources = game.resourceManager.getAll()
+  Object.keys(allResources).forEach(resourceId => {
+    updateResourceAmount(resourceId)
   })
 
   updateWorkerSummary()
@@ -744,23 +987,58 @@ function handleCurrencyChanged(data) {
   activityElements.forEach((_, activityId) => {
     updateActivityState(activityId)
   })
+
+  // Update building menu to show updated resource costs
+  buildBuildingMenu()
+
+  // Update town canvas (for worker changes)
+  if (townRenderer) {
+    townRenderer.render()
+  }
 }
 
 function handleGameTick(data) {
-  // Only update progress bars for active activities - super fast!
-  const active = game.activityManager.getActiveActivities()
+  // Update status bar with live round/timer/score information
+  const phaseInfo = game.roundManager.getPhaseInfo()
 
-  active.forEach(state => {
-    updateActivityProgress(state.activityId)
+  // Update round counter
+  if (statusElements.roundCounter) {
+    statusElements.roundCounter.textContent = `${phaseInfo.round} / ${phaseInfo.totalRounds}`
+  }
 
-    // Update active panel progress
-    const cached = activeActivityElements.get(state.activityId)
-    if (cached) {
-      const progress = game.activityManager.getProgress(state.activityId)
-      cached.progressFill.style.width = `${progress * 100}%`
-      cached.status.textContent = `${Math.floor(progress * 100)}%`
+  // Update phase indicator with appropriate styling
+  if (statusElements.phaseIndicator) {
+    const phaseText = phaseInfo.phase === 'collection' ? 'Collection' :
+                      phaseInfo.phase === 'building' ? 'Building' : 'Ended'
+    statusElements.phaseIndicator.textContent = phaseText
+    statusElements.phaseIndicator.className = `status-value phase-${phaseInfo.phase}`
+  }
+
+  // Update timer display
+  if (statusElements.timerDisplay) {
+    statusElements.timerDisplay.textContent = game.roundManager.getFormattedTime()
+  }
+
+  // Update timer progress bar
+  if (statusElements.timerProgress) {
+    const percent = phaseInfo.phase === 'collection'
+      ? (phaseInfo.timeRemaining / game.roundManager.COLLECTION_PHASE_DURATION) * 100
+      : 0
+    statusElements.timerProgress.style.width = `${Math.max(0, percent)}%`
+
+    // Add warning class when time is running out
+    if (percent < 20 && percent > 0) {
+      statusElements.timerProgress.classList.add('warning')
+    } else {
+      statusElements.timerProgress.classList.remove('warning')
     }
-  })
+  }
+
+  // Update score display
+  if (statusElements.scoreDisplay) {
+    const score = game.calculateCurrentScore()
+    statusElements.scoreDisplay.textContent = score
+  }
 }
 
 function handleWorkerChanged(data) {
@@ -779,15 +1057,99 @@ function handleOfflineProgress(data) {
   const seconds = timeInSeconds % 60
 
   const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
-  const currencyCount = Object.keys(data.currenciesEarned).length
+  const resourceCount = Object.keys(data.resourcesEarned || data.currenciesEarned || {}).length
   const activitiesCount = data.activitiesCompleted.reduce((sum, a) => sum + a.completions, 0)
 
-  showNotification(`⏰ Welcome back! While offline (${timeString}): ${activitiesCount} activities completed, ${currencyCount} currencies earned!`)
+  showNotification(`⏰ Welcome back! While offline (${timeString}): ${activitiesCount} activities completed, ${resourceCount} resources earned!`)
 }
 
 function handleUpgradePurchased(data) {
   buildUpgradeList()
   showNotification(`✨ Purchased: ${data.upgrade.name}!`)
+}
+
+function handlePhaseChanged(data) {
+  const { phase, round } = data
+  const continueBtn = document.getElementById('continueBtn')
+  const fastForwardBtn = document.getElementById('fastForwardBtn')
+
+  if (phase === 'building') {
+    // Switch to city tab when entering building phase
+    switchTab('city')
+    showNotification(`Round ${round} complete! Time to build your city!`)
+
+    // Show continue button, hide fast-forward
+    if (continueBtn) {
+      continueBtn.classList.remove('hidden')
+    }
+    if (fastForwardBtn) {
+      fastForwardBtn.classList.add('hidden')
+    }
+
+    // Disable worker controls during building phase
+    disableWorkerControls()
+  } else if (phase === 'collection') {
+    // Switch back to activities tab when entering collection phase
+    switchTab('activities')
+    showNotification(`Round ${round} started! Gather resources!`)
+
+    // Hide continue button, show fast-forward
+    if (continueBtn) {
+      continueBtn.classList.add('hidden')
+    }
+    if (fastForwardBtn) {
+      fastForwardBtn.classList.remove('hidden')
+    }
+
+    // Enable worker controls during collection phase
+    enableWorkerControls()
+  }
+}
+
+function handleFastForward(data) {
+  const timeInSeconds = Math.floor(data.timeSkipped / 1000)
+  const resourceCount = Object.keys(data.resourcesEarned || {}).length
+  const activitiesCount = data.activitiesCompleted.reduce((sum, a) => sum + a.completions, 0)
+
+  showNotification(`⏩ Fast-forwarded ${timeInSeconds}s! ${activitiesCount} activities completed, ${resourceCount} resources earned!`)
+}
+
+/**
+ * Disable worker control buttons during building phase
+ */
+function disableWorkerControls() {
+  document.querySelectorAll('.worker-btn-plus, .worker-btn-minus, .worker-btn-remove-all').forEach(btn => {
+    btn.disabled = true
+    btn.style.opacity = '0.5'
+    btn.style.cursor = 'not-allowed'
+  })
+}
+
+/**
+ * Enable worker control buttons during collection phase
+ */
+function enableWorkerControls() {
+  document.querySelectorAll('.worker-btn-plus, .worker-btn-minus, .worker-btn-remove-all').forEach(btn => {
+    // Only enable if button shouldn't be disabled for other reasons
+    // Re-run update logic to determine proper disabled state
+    btn.style.opacity = ''
+    btn.style.cursor = ''
+  })
+
+  // Re-update all activity states to restore proper disabled states
+  activityElements.forEach((_, activityId) => {
+    updateActivityState(activityId)
+  })
+}
+
+function handleBuildingEvent(data) {
+  // Rebuild building menu when anything changes
+  buildBuildingMenu()
+
+  // Re-render town canvas
+  if (townRenderer) {
+    townRenderer.render()
+  }
 }
 
 function checkForUnlocks() {
@@ -804,6 +1166,40 @@ function checkForUnlocks() {
   if (unlockChanged) {
     buildActivityList(selectedSkill)
   }
+}
+
+// ============================================================================
+// RENDER LOOP - 60fps activity simulation rendering
+// ============================================================================
+
+/**
+ * Start the render loop for activity simulations
+ * Runs independently from game logic at ~60fps
+ */
+function startSimulationRenderLoop() {
+  let lastFrameTime = performance.now()
+
+  function renderFrame(currentTime) {
+    // Calculate delta time for smooth animations
+    const deltaTime = currentTime - lastFrameTime
+    lastFrameTime = currentTime
+
+    // Render all activity simulations
+    activitySimulations.forEach(simulation => {
+      simulation.render(deltaTime)
+    })
+
+    // Render town canvas
+    if (townRenderer && currentTab === 'city') {
+      townRenderer.render()
+    }
+
+    // Continue loop
+    requestAnimationFrame(renderFrame)
+  }
+
+  // Start the loop
+  requestAnimationFrame(renderFrame)
 }
 
 // ============================================================================
@@ -838,12 +1234,13 @@ function loadGame() {
       // Rebuild all UI
       buildSkillList()
       buildActivityList(selectedSkill)
-      buildCurrencyTicker()
+      buildResourceTicker()
       buildActiveActivitiesPanel()
       updateActiveActivitiesPanel()
       buildUpgradeList()
       buildWorkerPanel()
       updateWorkerPanel()
+      buildBuildingMenu()
 
       showNotification('📂 Game loaded!')
     } catch (e) {
@@ -852,21 +1249,81 @@ function loadGame() {
   }
 }
 
+function handleGameEnded(data) {
+  const { finalScore } = data
+
+  // Calculate statistics
+  const workerCount = game.resourceManager.get('basicWorker') || 0
+  const buildingCount = game.buildingManager.getTotalBuildingCount()
+  const buildingPoints = buildingCount * 10
+
+  // Get all resources
+  const allResources = game.resourceManager.getAll()
+
+  // Show modal
+  const modal = document.getElementById('endGameModal')
+  if (!modal) return
+
+  // Update score
+  document.getElementById('finalScoreValue').textContent = finalScore
+
+  // Update breakdown
+  document.getElementById('finalWorkers').textContent = workerCount
+  document.getElementById('finalBuildings').textContent = buildingCount
+  document.getElementById('finalBuildingPoints').textContent = buildingPoints
+
+  // Update resources
+  const finalResourcesContainer = document.getElementById('finalResources')
+  finalResourcesContainer.innerHTML = ''
+
+  Object.entries(allResources).forEach(([resourceId, amount]) => {
+    if (amount > 0 && resources[resourceId]) {
+      const resource = resources[resourceId]
+      const div = document.createElement('div')
+      div.className = 'resource-stat'
+      div.innerHTML = `
+        <div class="resource-stat-icon">${resource.icon}</div>
+        <div class="resource-stat-name">${resource.name}</div>
+        <div class="resource-stat-value">${Math.floor(amount)}</div>
+      `
+      finalResourcesContainer.appendChild(div)
+    }
+  })
+
+  // Show modal
+  modal.classList.remove('hidden')
+}
+
+function restartGame() {
+  // Close modal
+  const modal = document.getElementById('endGameModal')
+  if (modal) {
+    modal.classList.add('hidden')
+  }
+
+  // Reset game
+  game.reset()
+  localStorage.removeItem('incrementalGameSave')
+
+  buildSkillList()
+  buildActivityList(selectedSkill)
+  buildResourceTicker()
+  buildActiveActivitiesPanel()
+  updateActiveActivitiesPanel()
+  buildUpgradeList()
+  buildWorkerPanel()
+  updateWorkerPanel()
+  buildBuildingMenu()
+
+  // Switch to activities tab
+  switchTab('activities')
+
+  showNotification('🔄 Game reset! Good luck!')
+}
+
 function resetGame() {
   if (confirm('Are you sure you want to reset? This cannot be undone!')) {
-    game.reset()
-    localStorage.removeItem('incrementalGameSave')
-
-    buildSkillList()
-    buildActivityList(selectedSkill)
-    buildCurrencyTicker()
-    buildActiveActivitiesPanel()
-    updateActiveActivitiesPanel()
-    buildUpgradeList()
-    buildWorkerPanel()
-    updateWorkerPanel()
-
-    showNotification('🔄 Game reset!')
+    restartGame()
   }
 }
 

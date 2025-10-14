@@ -3,9 +3,9 @@
  * Activities run ONLY when workers are assigned (no manual clicking)
  */
 export class ActivityManager {
-  constructor(activityDefinitions, currencyManager, skillManager, eventBus, upgradeManager = null, workerManager = null) {
+  constructor(activityDefinitions, resourceManager, skillManager, eventBus, upgradeManager = null, workerManager = null) {
     this.activityDefinitions = activityDefinitions || []
-    this.currencyManager = currencyManager
+    this.resourceManager = resourceManager
     this.skillManager = skillManager
     this.eventBus = eventBus
     this.upgradeManager = upgradeManager
@@ -30,9 +30,9 @@ export class ActivityManager {
     // Check level requirement
     if (!this.skillManager.isActivityUnlocked(activityId)) return false
 
-    // Check currency requirements (with cost reduction applied)
+    // Check resource requirements (with cost reduction applied)
     const effectiveInputs = this.getEffectiveInputs(activityId)
-    if (!this.currencyManager.canAfford(effectiveInputs)) return false
+    if (!this.resourceManager.canAfford(effectiveInputs)) return false
 
     return true
   }
@@ -151,17 +151,17 @@ export class ActivityManager {
     const effectiveOutputs = this.getEffectiveOutputs(activityId)
 
     // Consume inputs (with cost reduction applied)
-    this.currencyManager.spendCosts(effectiveInputs)
+    this.resourceManager.spendCosts(effectiveInputs)
 
     // Consume speed boost resources
     if (this.workerManager) {
       this.workerManager.consumeSpeedBoosts(activityId)
     }
 
-    // Grant outputs (with bonuses applied)
-    Object.entries(effectiveOutputs).forEach(([currencyId, amount]) => {
-      this.currencyManager.add(currencyId, amount)
-    })
+    // Grant outputs
+    for (const [resourceId, amount] of Object.entries(effectiveOutputs)) {
+      this.resourceManager.add(resourceId, amount)
+    }
 
     // Grant XP
     this.skillManager.addXP(activity.skillId, activity.xpGained)
@@ -261,8 +261,8 @@ export class ActivityManager {
     if (this.upgradeManager) {
       const costReduction = this.upgradeManager.getCostReduction(activityId)
       if (costReduction > 0) {
-        for (const [currencyId, amount] of Object.entries(inputs)) {
-          inputs[currencyId] = Math.max(0, Math.floor(amount * (1 - costReduction)))
+        for (const [resourceId, amount] of Object.entries(inputs)) {
+          inputs[resourceId] = Math.max(0, Math.floor(amount * (1 - costReduction)))
         }
       }
     }
@@ -283,8 +283,8 @@ export class ActivityManager {
 
     if (this.upgradeManager) {
       const outputBonus = this.upgradeManager.getOutputBonus(activityId)
-      for (const [currencyId, bonusAmount] of Object.entries(outputBonus)) {
-        outputs[currencyId] = (outputs[currencyId] || 0) + bonusAmount
+      for (const [resourceId, bonusAmount] of Object.entries(outputBonus)) {
+        outputs[resourceId] = (outputs[resourceId] || 0) + bonusAmount
       }
     }
 

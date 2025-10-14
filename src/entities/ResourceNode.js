@@ -23,7 +23,7 @@ export class ResourceNode {
 
     // Harvesting properties
     this.harvestTime = definition.harvestTime || 2 // seconds per unit
-    this.outputs = definition.outputs || {} // { currencyId: amount }
+    this.outputs = definition.outputs || {} // { resourceId: amount }
 
     // Requirements
     this.requiredSkillLevel = definition.requiredSkillLevel || 1

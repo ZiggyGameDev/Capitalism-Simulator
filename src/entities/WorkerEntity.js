@@ -37,9 +37,9 @@ export class WorkerEntity {
    * Main update loop - called every frame
    * @param {number} deltaTime - Time elapsed in milliseconds
    * @param {Map<string, ResourceNode>} resourceNodes - All resource nodes
-   * @param {CurrencyManager} currencyManager - For depositing resources
+   * @param {ResourceManager} resourceManager - For depositing resources
    */
-  update(deltaTime, resourceNodes, currencyManager) {
+  update(deltaTime, resourceNodes, resourceManager) {
     this.stateTimer += deltaTime
 
     switch (this.state) {
@@ -56,7 +56,7 @@ export class WorkerEntity {
         this.updateWalkingBack(deltaTime)
         break
       case 'depositing':
-        this.updateDepositing(deltaTime, currencyManager)
+        this.updateDepositing(deltaTime, resourceManager)
         break
     }
   }
@@ -136,7 +136,7 @@ export class WorkerEntity {
   /**
    * State: depositing - deliver resource and apply delay
    */
-  updateDepositing(deltaTime, currencyManager) {
+  updateDepositing(deltaTime, resourceManager) {
     // Deposit happens immediately when entering this state
     // Now we just wait for the random offset delay
 
@@ -145,9 +145,9 @@ export class WorkerEntity {
     if (this.stateTimer >= delayDuration) {
       // Deposit complete, add resources to inventory
       if (this.carrying) {
-        if (currencyManager) {
-          Object.entries(this.carrying).forEach(([currencyId, amount]) => {
-            currencyManager.add(currencyId, amount)
+        if (resourceManager) {
+          Object.entries(this.carrying).forEach(([resourceId, amount]) => {
+            resourceManager.add(resourceId, amount)
           })
         }
         this.carrying = null

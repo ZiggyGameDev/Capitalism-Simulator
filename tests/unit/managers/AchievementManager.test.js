@@ -15,10 +15,10 @@ describe('AchievementManager', () => {
       reward: { wood: 50 }
     },
     {
-      id: 'test_currency',
-      name: 'Test Currency Achievement',
-      type: 'currencyEarned',
-      requirement: { currencyId: 'wood', amount: 100 },
+      id: 'test_resource',
+      name: 'Test Resource Achievement',
+      type: 'resourceEarned',
+      requirement: { resourceId: 'wood', amount: 100 },
       reward: { wood: 25 }
     },
     {
@@ -55,7 +55,7 @@ describe('AchievementManager', () => {
     })
 
     it('should initialize tracking stats', () => {
-      expect(achievementManager.stats.currenciesEarned).toEqual({})
+      expect(achievementManager.stats.resourcesEarned).toEqual({})
       expect(achievementManager.stats.activitiesCompleted).toEqual({})
     })
   })
@@ -94,16 +94,16 @@ describe('AchievementManager', () => {
     })
   })
 
-  describe('trackCurrency', () => {
-    it('should track currency earned', () => {
-      achievementManager.trackCurrency('wood', 50)
-      expect(achievementManager.stats.currenciesEarned.wood).toBe(50)
+  describe('trackResource', () => {
+    it('should track resource earned', () => {
+      achievementManager.trackResource('wood', 50)
+      expect(achievementManager.stats.resourcesEarned.wood).toBe(50)
     })
 
-    it('should accumulate currency earned', () => {
-      achievementManager.trackCurrency('wood', 50)
-      achievementManager.trackCurrency('wood', 30)
-      expect(achievementManager.stats.currenciesEarned.wood).toBe(80)
+    it('should accumulate resources earned', () => {
+      achievementManager.trackResource('wood', 50)
+      achievementManager.trackResource('wood', 30)
+      expect(achievementManager.stats.resourcesEarned.wood).toBe(80)
     })
   })
 
@@ -133,42 +133,42 @@ describe('AchievementManager', () => {
       expect(unlocked[0].id).toBe('test_skill')
     })
 
-    it('should check currency achievements', () => {
-      achievementManager.trackCurrency('wood', 100)
+    it('should check resource achievements', () => {
+      achievementManager.trackResource('wood', 100)
       const gameState = {
         skills: {},
         upgrades: { purchased: [] }
       }
 
       const unlocked = achievementManager.checkAll(gameState)
-      const currencyAch = unlocked.find(a => a.id === 'test_currency')
-      expect(currencyAch).toBeDefined()
+      const resourceAch = unlocked.find(a => a.id === 'test_resource')
+      expect(resourceAch).toBeDefined()
     })
   })
 
   describe('getState and loadState', () => {
     it('should save and restore unlocked achievements', () => {
-      achievementManager.unlocked = ['test_skill', 'test_currency']
-      achievementManager.stats.currenciesEarned = { wood: 100 }
+      achievementManager.unlocked = ['test_skill', 'test_resource']
+      achievementManager.stats.resourcesEarned = { wood: 100 }
 
       const state = achievementManager.getState()
       const newManager = new AchievementManager(testAchievements, eventBus)
       newManager.loadState(state)
 
       expect(newManager.isUnlocked('test_skill')).toBe(true)
-      expect(newManager.stats.currenciesEarned.wood).toBe(100)
+      expect(newManager.stats.resourcesEarned.wood).toBe(100)
     })
   })
 
   describe('reset', () => {
     it('should clear all unlocked achievements and stats', () => {
       achievementManager.unlocked = ['test_skill']
-      achievementManager.stats.currenciesEarned = { wood: 100 }
+      achievementManager.stats.resourcesEarned = { wood: 100 }
 
       achievementManager.reset()
 
       expect(achievementManager.unlocked).toEqual([])
-      expect(achievementManager.stats.currenciesEarned).toEqual({})
+      expect(achievementManager.stats.resourcesEarned).toEqual({})
     })
   })
 })

@@ -8,13 +8,44 @@
 </head>
 <body>
   <div class="game-container">
+    <!-- Game Status Bar -->
+    <div class="game-status-bar">
+      <div class="status-item">
+        <span class="status-label">Round:</span>
+        <span id="roundCounter" class="status-value">1 / 5</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Phase:</span>
+        <span id="phaseIndicator" class="status-value phase-collection">Collection</span>
+      </div>
+      <div class="status-item timer-section">
+        <span class="status-label">Time:</span>
+        <span id="timerDisplay" class="status-value timer-value">1:30</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Score:</span>
+        <span id="scoreDisplay" class="status-value">0</span>
+      </div>
+    </div>
+
+    <!-- Timer Progress Bar -->
+    <div class="timer-progress-container">
+      <div id="timerProgress" class="timer-progress-bar"></div>
+    </div>
+
     <!-- Currency Ticker -->
     <div class="currency-ticker-container">
       <div id="currencyTicker" class="currency-ticker"></div>
     </div>
 
-    <!-- Main Game Area -->
-    <div class="game-main">
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+      <button class="tab-button active" data-tab="activities">🎯 Activities</button>
+      <button class="tab-button" data-tab="city">🏙️ City</button>
+    </div>
+
+    <!-- Activities View -->
+    <div class="game-main tab-content active" data-view="activities">
       <!-- Skill List (Left) -->
       <div class="skill-panel">
         <h2>Skills</h2>
@@ -22,6 +53,9 @@
         <div class="skill-panel-footer">
           <button id="saveBtn" class="btn-save">💾 Save</button>
           <button id="resetBtn" class="btn-reset">🔄 Reset</button>
+        </div>
+        <div class="fast-forward-container">
+          <button id="fastForwardBtn" class="btn-fast-forward">⏩ Fast Forward to End</button>
         </div>
       </div>
 
@@ -49,6 +83,67 @@
           <div id="upgradeList" class="upgrade-list"></div>
         </div>
       </div>
+    </div>
+
+    <!-- City View -->
+    <div class="city-view tab-content" data-view="city">
+      <!-- Building Menu (Left) -->
+      <div class="building-menu-panel">
+        <div class="building-menu-header">
+          <h2>🏗️ Buildings</h2>
+          <button id="backToActivitiesBtn" class="btn-back-to-activities">← Back to Activities</button>
+        </div>
+        <div class="building-slots-info">
+          <span id="buildingSlots">0/5 Slots Used</span>
+        </div>
+        <div id="buildingMenu" class="building-menu"></div>
+
+        <!-- Continue Button (shown in building phase only) -->
+        <div class="continue-button-container">
+          <button id="continueBtn" class="btn-continue hidden">Continue to Next Round</button>
+        </div>
+      </div>
+
+      <!-- Town Canvas (Right) -->
+      <div class="town-panel">
+        <h2>🏙️ Your Town</h2>
+        <canvas id="townCanvas" class="town-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Game Modal -->
+  <div id="endGameModal" class="modal hidden">
+    <div class="modal-content">
+      <h1 class="end-game-title">🎉 Game Complete! 🎉</h1>
+
+      <div class="final-score-display">
+        <div class="score-label">Final Score</div>
+        <div id="finalScoreValue" class="score-value">0</div>
+      </div>
+
+      <div class="score-breakdown">
+        <h3>Score Breakdown</h3>
+        <div class="breakdown-item">
+          <span class="breakdown-label">👷 Total Workers:</span>
+          <span id="finalWorkers" class="breakdown-value">0</span>
+        </div>
+        <div class="breakdown-item">
+          <span class="breakdown-label">🏗️ Buildings Built:</span>
+          <span id="finalBuildings" class="breakdown-value">0</span>
+        </div>
+        <div class="breakdown-item">
+          <span class="breakdown-label">📊 Building Points (×10):</span>
+          <span id="finalBuildingPoints" class="breakdown-value">0</span>
+        </div>
+      </div>
+
+      <div class="end-game-stats">
+        <h3>Resources Collected</h3>
+        <div id="finalResources" class="final-resources"></div>
+      </div>
+
+      <button id="restartBtn" class="btn-restart">🔄 Play Again</button>
     </div>
   </div>
 

@@ -6,9 +6,9 @@ import { workerTypes, speedBoosts } from '../data/workerTypes.js'
  * Supports speed boosts from consumable resources
  */
 export class WorkerManager {
-  constructor(eventBus, currencyManager = null) {
+  constructor(eventBus, resourceManager = null) {
     this.eventBus = eventBus
-    this.currencyManager = currencyManager
+    this.resourceManager = resourceManager
     this.workerTypes = workerTypes
     this.speedBoosts = speedBoosts
 
@@ -23,9 +23,9 @@ export class WorkerManager {
    * Get available workers of a specific type
    */
   getAvailableWorkers(workerTypeId) {
-    if (!this.currencyManager) return 0
+    if (!this.resourceManager) return 0
 
-    const total = this.currencyManager.get(workerTypeId)
+    const total = this.resourceManager.get(workerTypeId)
     const assigned = this.getAssignedWorkers(workerTypeId)
     return total - assigned
   }
@@ -52,16 +52,25 @@ export class WorkerManager {
 
   /**
    * Assign workers to activity
+   * @returns {boolean} true if assignment succeeded, false otherwise
    */
   assign(activityId, workerTypeId, count) {
+    // Floor fractional counts
+    count = Math.floor(count)
+
+    // Reject negative counts
+    if (count < 0) {
+      return false
+    }
+
     if (count === 0) {
       // Unassign if count is 0
       this.unassign(activityId, workerTypeId)
-      return
+      return true
     }
 
     if (!this.canAssign(activityId, workerTypeId, count)) {
-      throw new Error(`Not enough available workers of type ${workerTypeId}`)
+      return false
     }
 
     if (!this.assignments[activityId]) {
@@ -77,6 +86,8 @@ export class WorkerManager {
         count
       })
     }
+
+    return true
   }
 
   /**
@@ -182,7 +193,7 @@ export class WorkerManager {
    * Get speed boost multiplier from active boosts
    */
   getSpeedBoostMultiplier(activityId, workerTypeId) {
-    if (!this.currencyManager) return 1.0
+    if (!this.resourceManager) return 1.0
 
     let multiplier = 1.0
 
@@ -192,7 +203,7 @@ export class WorkerManager {
       if (!boost.workerTypes.includes(workerTypeId)) continue
 
       // Check if we have the resource
-      if (this.currencyManager.get(boost.id) > 0) {
+      if (this.resourceManager.get(boost.id) > 0) {
         multiplier += boost.speedBonus
       }
     }
@@ -204,7 +215,7 @@ export class WorkerManager {
    * Consume speed boost resources for an activity completion
    */
   consumeSpeedBoosts(activityId) {
-    if (!this.currencyManager) return
+    if (!this.resourceManager) return
 
     const assignments = this.assignments[activityId]
     if (!assignments) return
@@ -214,7 +225,7 @@ export class WorkerManager {
     for (const workerTypeId of Object.keys(assignments)) {
       for (const boost of this.speedBoosts) {
         if (boost.workerTypes.includes(workerTypeId)) {
-          if (this.currencyManager.get(boost.id) > 0) {
+          if (this.resourceManager.get(boost.id) > 0) {
             activeBoosts.add(boost.id)
           }
         }
@@ -225,9 +236,9 @@ export class WorkerManager {
     for (const boostId of activeBoosts) {
       const boost = this.speedBoosts.find(b => b.id === boostId)
       if (boost) {
-        const currentAmount = this.currencyManager.get(boostId)
+        const currentAmount = this.resourceManager.get(boostId)
         const consumeAmount = Math.min(boost.consumptionRate, currentAmount)
-        this.currencyManager.subtract(boostId, consumeAmount)
+        this.resourceManager.subtract(boostId, consumeAmount)
       }
     }
   }
@@ -254,6 +265,9 @@ export class WorkerManager {
    * Load state
    */
   loadState(state) {
+    // Handle null/undefined state gracefully
+    if (!state) return
+
     if (state.assignments) {
       this.assignments = JSON.parse(JSON.stringify(state.assignments))
     }

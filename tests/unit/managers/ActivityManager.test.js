@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ActivityManager } from '../../../src/managers/ActivityManager.js'
-import { CurrencyManager } from '../../../src/managers/CurrencyManager.js'
+import { ResourceManager } from '../../../src/managers/ResourceManager.js'
 import { SkillManager } from '../../../src/managers/SkillManager.js'
 import { WorkerManager } from '../../../src/managers/WorkerManager.js'
 import { EventBus } from '../../../src/core/EventBus.js'
 
 describe('ActivityManager', () => {
-  let am, cm, sm, wm, eventBus
+  let am, rm, sm, wm, eventBus
   const activities = [
     {
       id: 'chopTree',
@@ -48,13 +48,13 @@ describe('ActivityManager', () => {
 
   beforeEach(() => {
     eventBus = new EventBus()
-    cm = new CurrencyManager(eventBus)
+    rm = new ResourceManager(eventBus)
     sm = new SkillManager(skills, activities, eventBus)
-    wm = new WorkerManager(eventBus, cm)
-    am = new ActivityManager(activities, cm, sm, eventBus, null, wm)
+    wm = new WorkerManager(eventBus, rm)
+    am = new ActivityManager(activities, rm, sm, eventBus, null, wm)
 
     // Add some workers for testing
-    cm.add('basicWorker', 10)
+    rm.add('basicWorker', 10)
   })
 
   describe('canRun()', () => {
@@ -72,7 +72,7 @@ describe('ActivityManager', () => {
       expect(am.canRun('trainDog')).toBe(false)
     })
 
-    it('should return false if missing currency', () => {
+    it('should return false if missing resources', () => {
       sm.addXP('dogHandling', 500)  // Get to level 5+
       wm.assign('trainDog', 'basicWorker', 1)
       expect(am.canRun('trainDog')).toBe(false)  // Missing puppy + food
@@ -80,8 +80,8 @@ describe('ActivityManager', () => {
 
     it('should return true if all requirements met', () => {
       sm.addXP('dogHandling', 500)
-      cm.add('puppy', 1)
-      cm.add('food', 3)
+      rm.add('puppy', 1)
+      rm.add('food', 3)
       wm.assign('trainDog', 'basicWorker', 1)
       expect(am.canRun('trainDog')).toBe(true)
     })
@@ -121,23 +121,23 @@ describe('ActivityManager', () => {
       am.update(duration * 1000 + 100)  // Complete
 
       expect(completeSpy).toHaveBeenCalled()
-      expect(cm.get('wood')).toBe(1)
+      expect(rm.get('wood')).toBe(1)
       expect(sm.getXP('woodcutting')).toBe(5)
     })
 
     it('should consume inputs on completion', () => {
       sm.addXP('dogHandling', 500)
-      cm.add('puppy', 1)
-      cm.add('food', 3)
+      rm.add('puppy', 1)
+      rm.add('food', 3)
       wm.assign('trainDog', 'basicWorker', 1)
 
       am.update(100)  // Start
       const duration = am.getEffectiveDuration('trainDog')
       am.update(duration * 1000 + 100)  // Complete
 
-      expect(cm.get('puppy')).toBe(0)
-      expect(cm.get('food')).toBe(0)
-      expect(cm.get('guardDog')).toBe(1)
+      expect(rm.get('puppy')).toBe(0)
+      expect(rm.get('food')).toBe(0)
+      expect(rm.get('guardDog')).toBe(1)
     })
 
     it('should auto-restart if workers still assigned', () => {
@@ -155,8 +155,8 @@ describe('ActivityManager', () => {
 
     it('should stop if resources run out', () => {
       sm.addXP('dogHandling', 500)
-      cm.add('puppy', 1)
-      cm.add('food', 3)
+      rm.add('puppy', 1)
+      rm.add('food', 3)
       wm.assign('trainDog', 'basicWorker', 1)
 
       am.update(100)  // Start

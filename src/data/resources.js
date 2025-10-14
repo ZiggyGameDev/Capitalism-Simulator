@@ -1,9 +1,9 @@
 /**
- * All currency definitions
- * Everything in the game is a currency - no complex inventory
+ * All resource definitions
+ * Everything in the game is a resource - no complex inventory
  */
 
-export const currencies = {
+export const resources = {
   // Woodcutting
   wood: { id: 'wood', name: 'Wood', description: 'Basic wood from trees', icon: '🪵' },
   oakWood: { id: 'oakWood', name: 'Oak Wood', description: 'Strong oak wood', icon: '🪵' },
@@ -41,4 +41,4 @@ export const currencies = {
   fuel: { id: 'fuel', name: 'Fuel', description: 'Powers machines', icon: '⛽' }
 }
 
-export const currencyList = Object.values(currencies)
+export const resourceList = Object.values(resources)

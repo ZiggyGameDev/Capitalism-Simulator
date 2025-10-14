@@ -103,8 +103,8 @@ export const achievements = [
     id: 'wood_hoarder',
     name: 'Wood Hoarder',
     description: 'Collect 1000 wood (total earned)',
-    type: 'currencyEarned',
-    requirement: { currencyId: 'wood', amount: 1000 },
+    type: 'resourceEarned',
+    requirement: { resourceId: 'wood', amount: 1000 },
     reward: { wood: 200 },
     icon: '🪵'
   },
@@ -112,8 +112,8 @@ export const achievements = [
     id: 'ore_baron',
     name: 'Ore Baron',
     description: 'Collect 500 copper ore (total earned)',
-    type: 'currencyEarned',
-    requirement: { currencyId: 'copperOre', amount: 500 },
+    type: 'resourceEarned',
+    requirement: { resourceId: 'copperOre', amount: 500 },
     reward: { ironOre: 100 },
     icon: '💎'
   },

@@ -7,7 +7,7 @@ export class AchievementManager {
     this.eventBus = eventBus
     this.unlocked = []
     this.stats = {
-      currenciesEarned: {},
+      resourcesEarned: {},
       activitiesCompleted: {}
     }
   }
@@ -20,10 +20,10 @@ export class AchievementManager {
   }
 
   /**
-   * Track currency earned
+   * Track resource earned
    */
-  trackCurrency(currencyId, amount) {
-    this.stats.currenciesEarned[currencyId] = (this.stats.currenciesEarned[currencyId] || 0) + amount
+  trackResource(resourceId, amount) {
+    this.stats.resourcesEarned[resourceId] = (this.stats.resourcesEarned[resourceId] || 0) + amount
   }
 
   /**
@@ -50,8 +50,8 @@ export class AchievementManager {
         requirementMet = skill && skill.level >= achievement.requirement.level
         break
 
-      case 'currencyEarned':
-        const earned = this.stats.currenciesEarned[achievement.requirement.currencyId] || 0
+      case 'resourceEarned':
+        const earned = this.stats.resourcesEarned[achievement.requirement.resourceId] || 0
         requirementMet = earned >= achievement.requirement.amount
         break
 
@@ -115,7 +115,7 @@ export class AchievementManager {
     return {
       unlocked: [...this.unlocked],
       stats: {
-        currenciesEarned: { ...this.stats.currenciesEarned },
+        resourcesEarned: { ...this.stats.resourcesEarned },
         activitiesCompleted: { ...this.stats.activitiesCompleted }
       }
     }
@@ -130,7 +130,7 @@ export class AchievementManager {
     }
     if (state.stats) {
       this.stats = {
-        currenciesEarned: { ...state.stats.currenciesEarned },
+        resourcesEarned: { ...(state.stats.resourcesEarned || state.stats.currenciesEarned || {}) },
         activitiesCompleted: { ...state.stats.activitiesCompleted }
       }
     }
@@ -142,7 +142,7 @@ export class AchievementManager {
   reset() {
     this.unlocked = []
     this.stats = {
-      currenciesEarned: {},
+      resourcesEarned: {},
       activitiesCompleted: {}
     }
   }

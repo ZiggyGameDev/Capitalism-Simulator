@@ -6,14 +6,14 @@ describe('WorkerEntityManager', () => {
   let manager
   let eventBus
   let emitSpy
-  let mockCurrencyManager
+  let mockResourceManager
   let mockResourceNodes
 
   beforeEach(() => {
     eventBus = new EventBus()
     emitSpy = vi.spyOn(eventBus, 'emit')
 
-    mockCurrencyManager = {
+    mockResourceManager = {
       get: vi.fn((id) => {
         if (id === 'basicWorker') return 2
         if (id === 'tractorWorker') return 1
@@ -32,7 +32,7 @@ describe('WorkerEntityManager', () => {
       harvest: vi.fn(() => true)
     })
 
-    manager = new WorkerEntityManager(eventBus, mockCurrencyManager)
+    manager = new WorkerEntityManager(eventBus, mockResourceManager)
   })
 
   describe('initialization', () => {
@@ -364,9 +364,9 @@ describe('WorkerEntityManager', () => {
     })
   })
 
-  describe('sync with currency', () => {
-    it('should spawn workers to match currency count', () => {
-      manager.syncWithCurrency(mockCurrencyManager)
+  describe('sync with resources', () => {
+    it('should spawn workers to match resource count', () => {
+      manager.syncWithCurrency(mockResourceManager)
 
       expect(manager.getWorkersByType('basicWorker').length).toBe(2)
       expect(manager.getWorkersByType('tractorWorker').length).toBe(1)
@@ -379,7 +379,7 @@ describe('WorkerEntityManager', () => {
 
       const sizeBefore = manager.workers.size
 
-      manager.syncWithCurrency(mockCurrencyManager)
+      manager.syncWithCurrency(mockResourceManager)
 
       expect(manager.workers.size).toBe(sizeBefore + 1) // Only tractor spawned
     })
@@ -387,9 +387,9 @@ describe('WorkerEntityManager', () => {
     it('should despawn excess workers', () => {
       manager.spawnWorker('basicWorker')
       manager.spawnWorker('basicWorker')
-      manager.spawnWorker('basicWorker') // 3 workers, but currency has 2
+      manager.spawnWorker('basicWorker') // 3 workers, but resource has 2
 
-      manager.syncWithCurrency(mockCurrencyManager)
+      manager.syncWithCurrency(mockResourceManager)
 
       expect(manager.getWorkersByType('basicWorker').length).toBe(2)
     })
@@ -403,7 +403,7 @@ describe('WorkerEntityManager', () => {
       manager.assignWorker(id2, 'wheat_field')
       // id3 is idle
 
-      manager.syncWithCurrency(mockCurrencyManager)
+      manager.syncWithCurrency(mockResourceManager)
 
       // Should despawn id3 first (idle)
       expect(manager.getWorker(id3)).toBeUndefined()
@@ -411,12 +411,12 @@ describe('WorkerEntityManager', () => {
       expect(manager.getWorker(id2)).toBeDefined()
     })
 
-    it('should handle zero currency', () => {
+    it('should handle zero resources', () => {
       manager.spawnWorker('droneWorker')
 
-      mockCurrencyManager.get = vi.fn(() => 0)
+      mockResourceManager.get = vi.fn(() => 0)
 
-      manager.syncWithCurrency(mockCurrencyManager)
+      manager.syncWithCurrency(mockResourceManager)
 
       expect(manager.getWorkersByType('droneWorker').length).toBe(0)
     })
@@ -532,7 +532,7 @@ describe('WorkerEntityManager', () => {
         ]
       }
 
-      manager.loadState(state, mockCurrencyManager)
+      manager.loadState(state, mockResourceManager)
 
       expect(manager.nextWorkerId).toBe(10)
       expect(manager.workers.size).toBe(2)
@@ -565,7 +565,7 @@ describe('WorkerEntityManager', () => {
         ]
       }
 
-      manager.loadState(state, mockCurrencyManager)
+      manager.loadState(state, mockResourceManager)
 
       expect(manager.workers.size).toBe(1)
       expect(manager.getWorker('worker_1')).toBeUndefined()
@@ -575,8 +575,8 @@ describe('WorkerEntityManager', () => {
     it('should handle empty state gracefully', () => {
       manager.spawnWorker('basicWorker')
 
-      expect(() => manager.loadState(null, mockCurrencyManager)).not.toThrow()
-      expect(() => manager.loadState({}, mockCurrencyManager)).not.toThrow()
+      expect(() => manager.loadState(null, mockResourceManager)).not.toThrow()
+      expect(() => manager.loadState({}, mockResourceManager)).not.toThrow()
     })
   })
 

@@ -1,12 +1,11 @@
 import { EventBus } from './EventBus.js'
-import { CurrencyManager } from '../managers/CurrencyManager.js'
+import { ResourceManager } from '../managers/ResourceManager.js'
 import { SkillManager } from '../managers/SkillManager.js'
 import { ActivityManager } from '../managers/ActivityManager.js'
 import { UpgradeManager } from '../managers/UpgradeManager.js'
 import { WorkerManager } from '../managers/WorkerManager.js'
-import { ResourceNodeManager } from '../managers/ResourceNodeManager.js'
-import { WorkerEntityManager } from '../managers/WorkerEntityManager.js'
-import { resourceNodeDefinitions } from '../data/resource-nodes.js'
+import { BuildingManager } from '../managers/BuildingManager.js'
+import { RoundManager } from './RoundManager.js'
 import { levelFromXP } from '../utils/calculations.js'
 
 /**
@@ -15,15 +14,22 @@ import { levelFromXP } from '../utils/calculations.js'
 export class GameEngine {
   constructor(skillDefinitions, activityDefinitions, upgradeDefinitions = []) {
     this.eventBus = new EventBus()
-    this.currencyManager = new CurrencyManager(this.eventBus)
+    this.resourceManager = new ResourceManager(this.eventBus)
     this.skillManager = new SkillManager(skillDefinitions, activityDefinitions, this.eventBus)
-    this.upgradeManager = new UpgradeManager(upgradeDefinitions, this.currencyManager, this.skillManager, this.eventBus)
-    this.workerManager = new WorkerManager(this.eventBus, this.currencyManager)
-    this.activityManager = new ActivityManager(activityDefinitions, this.currencyManager, this.skillManager, this.eventBus, this.upgradeManager, this.workerManager)
+    this.upgradeManager = new UpgradeManager(upgradeDefinitions, this.resourceManager, this.skillManager, this.eventBus)
+    this.workerManager = new WorkerManager(this.eventBus, this.resourceManager)
+    this.buildingManager = new BuildingManager(this.eventBus, this.resourceManager)
+    this.roundManager = new RoundManager(this.eventBus)
+    this.activityManager = new ActivityManager(activityDefinitions, this.resourceManager, this.skillManager, this.eventBus, this.upgradeManager, this.workerManager)
 
-    // New visual worker systems
-    this.resourceNodeManager = new ResourceNodeManager(resourceNodeDefinitions, this.eventBus)
-    this.workerEntityManager = new WorkerEntityManager(this.eventBus, this.currencyManager)
+    // Listen for resource changes to track mined amounts
+    this.eventBus.on('activity:completed', (data) => {
+      if (data.outputs) {
+        Object.entries(data.outputs).forEach(([resourceId, amount]) => {
+          this.buildingManager.trackResourceMined(resourceId, amount)
+        })
+      }
+    })
 
     this.isRunning = false
     this.isPaused = false
@@ -93,20 +99,24 @@ export class GameEngine {
    * @param {number} deltaTime - Time elapsed in ms
    */
   update(deltaTime) {
-    // Update activities (old system - still active)
-    this.activityManager.update(deltaTime)
+    // Update round manager timer
+    this.roundManager.update(deltaTime)
 
-    // Update new visual worker systems
-    this.resourceNodeManager.update(deltaTime)
-    this.workerEntityManager.update(deltaTime, this.resourceNodeManager.nodes)
+    // Only update activities and buildings during collection phase
+    if (this.roundManager.isCollectionPhase()) {
+      // Update activities
+      this.activityManager.update(deltaTime)
 
-    // Sync worker entities with currency (spawn/despawn workers based on owned workers)
-    this.workerEntityManager.syncWithCurrency(this.currencyManager)
+      // Update buildings (construction and worker generation)
+      this.buildingManager.update(deltaTime)
+    }
 
     // Emit tick event for UI updates
     this.eventBus.emit('game:tick', {
       deltaTime,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      phase: this.roundManager.currentPhase,
+      round: this.roundManager.currentRound
     })
   }
 
@@ -134,12 +144,13 @@ export class GameEngine {
    */
   getState() {
     return {
-      currencies: this.currencyManager.getAll(),
+      version: 2, // Increment when save format changes
+      resources: this.resourceManager.getAll(),
       skills: this.skillManager.getAllSkills(),
       upgrades: this.upgradeManager.getState(),
       workers: this.workerManager.getState(),
-      resourceNodes: this.resourceNodeManager.getState(),
-      workerEntities: this.workerEntityManager.getState(),
+      buildings: this.buildingManager.getState(),
+      roundManager: this.roundManager.getState(),
       lastSaveTime: Date.now()
     }
   }
@@ -149,10 +160,17 @@ export class GameEngine {
    * @param {Object} state - Game state
    */
   loadState(state) {
-    // Load currencies
-    if (state.currencies) {
-      Object.entries(state.currencies).forEach(([id, amount]) => {
-        this.currencyManager.set(id, amount)
+    // Check version - if old version, ignore the save
+    if (!state.version || state.version < 2) {
+      console.warn('Old save version detected - starting fresh')
+      return
+    }
+
+    // Load resources (support legacy 'currencies' key for backwards compatibility)
+    const resources = state.resources || state.currencies
+    if (resources) {
+      Object.entries(resources).forEach(([id, amount]) => {
+        this.resourceManager.set(id, amount)
       })
     }
 
@@ -170,19 +188,19 @@ export class GameEngine {
       this.upgradeManager.loadState(state.upgrades)
     }
 
-    // Load workers (old system)
+    // Load workers
     if (state.workers) {
       this.workerManager.loadState(state.workers)
     }
 
-    // Load resource nodes (new system)
-    if (state.resourceNodes) {
-      this.resourceNodeManager.loadState(state.resourceNodes)
+    // Load buildings
+    if (state.buildings) {
+      this.buildingManager.loadState(state.buildings)
     }
 
-    // Load worker entities (new system)
-    if (state.workerEntities) {
-      this.workerEntityManager.loadState(state.workerEntities, this.currencyManager)
+    // Load round manager
+    if (state.roundManager) {
+      this.roundManager.loadState(state.roundManager)
     }
 
     // Calculate and apply offline progress if lastSaveTime exists
@@ -200,16 +218,36 @@ export class GameEngine {
   }
 
   /**
+   * Calculate current score
+   * Score = Total Workers + (Buildings Built × 10)
+   */
+  calculateCurrentScore() {
+    const workerCount = this.resourceManager.get('basicWorker') || 0
+    const buildingCount = this.buildingManager.getTotalBuildingCount()
+    return this.roundManager.calculateScore(workerCount, buildingCount)
+  }
+
+  /**
+   * End building phase and continue to next round
+   */
+  endBuildingPhase() {
+    this.roundManager.endBuildingPhase()
+  }
+
+  /**
    * Reset the game
    */
   reset() {
-    this.currencyManager.reset()
+    this.resourceManager.reset()
     this.skillManager.reset()
     this.activityManager.reset()
     this.upgradeManager.reset()
     this.workerManager.reset()
-    this.resourceNodeManager.reset()
-    this.workerEntityManager.reset()
+    this.buildingManager.reset()
+    this.roundManager.reset()
+
+    // Give starting worker for new game
+    this.resourceManager.add('basicWorker', 1)
   }
 
   /**
@@ -224,7 +262,7 @@ export class GameEngine {
 
     const result = {
       activitiesCompleted: [],
-      currenciesEarned: {},
+      resourcesEarned: {},
       xpEarned: {},
       totalTime: cappedTime
     }
@@ -245,8 +283,8 @@ export class GameEngine {
       return result
     }
 
-    // Create a temporary currency state to track resources
-    const tempCurrencies = { ...savedState.currencies }
+    // Create a temporary resource state to track resources
+    const tempResources = { ...(savedState.resources || savedState.currencies) }
 
     // Simulate time passing - find smallest duration to advance time in chunks
     let simulatedTime = 0
@@ -281,8 +319,8 @@ export class GameEngine {
 
         // Check if we can afford the inputs
         let canAfford = true
-        for (const [currencyId, amount] of Object.entries(activity.inputs)) {
-          if ((tempCurrencies[currencyId] || 0) < amount) {
+        for (const [resourceId, amount] of Object.entries(activity.inputs)) {
+          if ((tempResources[resourceId] || 0) < amount) {
             canAfford = false
             break
           }
@@ -301,14 +339,14 @@ export class GameEngine {
         anyActivityCompleted = true
 
         // Consume inputs
-        for (const [currencyId, amount] of Object.entries(activity.inputs)) {
-          tempCurrencies[currencyId] = (tempCurrencies[currencyId] || 0) - amount
+        for (const [resourceId, amount] of Object.entries(activity.inputs)) {
+          tempResources[resourceId] = (tempResources[resourceId] || 0) - amount
         }
 
         // Grant outputs
-        for (const [currencyId, amount] of Object.entries(activity.outputs)) {
-          tempCurrencies[currencyId] = (tempCurrencies[currencyId] || 0) + amount
-          result.currenciesEarned[currencyId] = (result.currenciesEarned[currencyId] || 0) + amount
+        for (const [resourceId, amount] of Object.entries(activity.outputs)) {
+          tempResources[resourceId] = (tempResources[resourceId] || 0) + amount
+          result.resourcesEarned[resourceId] = (result.resourcesEarned[resourceId] || 0) + amount
         }
 
         // Grant XP
@@ -343,9 +381,9 @@ export class GameEngine {
    * @param {Object} offlineResult - Result from calculateOfflineProgress
    */
   applyOfflineProgress(offlineResult) {
-    // Apply currencies
-    for (const [currencyId, amount] of Object.entries(offlineResult.currenciesEarned)) {
-      this.currencyManager.add(currencyId, amount)
+    // Apply resources
+    for (const [resourceId, amount] of Object.entries(offlineResult.resourcesEarned)) {
+      this.resourceManager.add(resourceId, amount)
     }
 
     // Apply XP
@@ -355,5 +393,33 @@ export class GameEngine {
 
     // Emit event
     this.eventBus.emit('game:offlineProgress', offlineResult)
+  }
+
+  /**
+   * Fast-forward to end of current round
+   * Calculates and applies resources that would be earned in remaining time
+   */
+  fastForwardRound() {
+    // Get remaining time from round manager
+    const remainingTime = this.roundManager.fastForward()
+
+    if (remainingTime <= 0) {
+      return // Already in building phase or game ended
+    }
+
+    // Get current game state for simulation
+    const currentState = this.getState()
+
+    // Calculate what would be earned in remaining time
+    const fastForwardResult = this.calculateOfflineProgress(remainingTime, currentState)
+
+    // Apply the resources immediately
+    this.applyOfflineProgress(fastForwardResult)
+
+    // Emit fast-forward event with summary
+    this.eventBus.emit('game:fastForward', {
+      timeSkipped: remainingTime,
+      ...fastForwardResult
+    })
   }
 }

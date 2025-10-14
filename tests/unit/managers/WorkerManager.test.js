@@ -1,22 +1,22 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { WorkerManager } from '../../../src/managers/WorkerManager.js'
 import { EventBus } from '../../../src/core/EventBus.js'
-import { CurrencyManager } from '../../../src/managers/CurrencyManager.js'
+import { ResourceManager } from '../../../src/managers/ResourceManager.js'
 
 describe('WorkerManager', () => {
   let workerManager
   let eventBus
-  let currencyManager
+  let resourceManager
 
   beforeEach(() => {
     eventBus = new EventBus()
-    currencyManager = new CurrencyManager(eventBus)
-    workerManager = new WorkerManager(eventBus, currencyManager)
+    resourceManager = new ResourceManager(eventBus)
+    workerManager = new WorkerManager(eventBus, resourceManager)
 
-    // Add some worker currencies for testing
-    currencyManager.add('basicWorker', 10)
-    currencyManager.add('tractorWorker', 5)
-    currencyManager.add('droneWorker', 2)
+    // Add some worker resources for testing
+    resourceManager.add('basicWorker', 10)
+    resourceManager.add('tractorWorker', 5)
+    resourceManager.add('droneWorker', 2)
   })
 
   describe('constructor', () => {
@@ -35,7 +35,7 @@ describe('WorkerManager', () => {
       expect(workerManager.getAvailableWorkers('basicWorker')).toBe(10)
     })
 
-    it('should return 0 if no currency manager', () => {
+    it('should return 0 if no resource manager', () => {
       const wm = new WorkerManager(eventBus, null)
       expect(wm.getAvailableWorkers('basicWorker')).toBe(0)
     })
@@ -70,7 +70,7 @@ describe('WorkerManager', () => {
 
   describe('canAssign', () => {
     it('should return false if no workers available', () => {
-      currencyManager.set('basicWorker', 0)
+      resourceManager.set('basicWorker', 0)
       expect(workerManager.canAssign('chopWood', 'basicWorker', 1)).toBe(false)
     })
 
@@ -90,9 +90,10 @@ describe('WorkerManager', () => {
   })
 
   describe('assign', () => {
-    it('should throw error if cannot assign', () => {
-      expect(() => workerManager.assign('chopWood', 'basicWorker', 20))
-        .toThrow('Not enough available workers')
+    it('should return false if cannot assign', () => {
+      const result = workerManager.assign('chopWood', 'basicWorker', 20)
+      expect(result).toBe(false)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(0)
     })
 
     it('should assign workers to activity', () => {
@@ -267,7 +268,7 @@ describe('WorkerManager', () => {
     it('should cap at 1.0 max speed', () => {
       // Even if calculations would exceed 1.0, cap at 1.0
       // Add more drone workers for this test
-      currencyManager.add('droneWorker', 100)
+      resourceManager.add('droneWorker', 100)
       workerManager.assign('chopWood', 'droneWorker', 100)
       expect(workerManager.getSpeedMultiplier('chopWood')).toBeLessThanOrEqual(1.0)
     })
@@ -296,7 +297,7 @@ describe('WorkerManager', () => {
       workerManager.assign('mineStone', 'tractorWorker', 2)
 
       const state = workerManager.getState()
-      const newManager = new WorkerManager(eventBus, currencyManager)
+      const newManager = new WorkerManager(eventBus, resourceManager)
       newManager.loadState(state)
 
       expect(newManager.getAssignment('chopWood', 'basicWorker')).toBe(3)
@@ -304,7 +305,7 @@ describe('WorkerManager', () => {
     })
 
     it('should handle empty state', () => {
-      const newManager = new WorkerManager(eventBus, currencyManager)
+      const newManager = new WorkerManager(eventBus, resourceManager)
       newManager.loadState({})
       expect(newManager.assignments).toEqual({})
     })
@@ -319,6 +320,181 @@ describe('WorkerManager', () => {
 
       expect(workerManager.assignments).toEqual({})
       expect(workerManager.activeBoosts).toEqual({})
+    })
+  })
+
+  describe('Edge Cases - Worker Assignment', () => {
+    it('should reject negative worker count', () => {
+      const result = workerManager.assign('chopWood', 'basicWorker', -5)
+      expect(result).toBe(false)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(0)
+    })
+
+    it('should handle assigning exactly zero workers (should call unassign)', () => {
+      workerManager.assign('chopWood', 'basicWorker', 5)
+      workerManager.assign('chopWood', 'basicWorker', 0)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(0)
+    })
+
+    it('should handle assigning exactly all available workers', () => {
+      // All 10 basic workers
+      workerManager.assign('chopWood', 'basicWorker', 10)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(10)
+      expect(workerManager.getAvailableWorkers('basicWorker')).toBe(0)
+    })
+
+    it('should prevent assigning when no free workers available', () => {
+      // Assign all workers to first activity
+      workerManager.assign('chopWood', 'basicWorker', 10)
+
+      // Try to assign to second activity - should fail
+      const result = workerManager.assign('mineStone', 'basicWorker', 1)
+      expect(result).toBe(false)
+      expect(workerManager.getAssignment('mineStone', 'basicWorker')).toBe(0)
+    })
+
+    it('should prevent assigning more than available across multiple activities', () => {
+      workerManager.assign('chopWood', 'basicWorker', 7)
+      const result = workerManager.assign('mineStone', 'basicWorker', 4)
+      expect(result).toBe(false)
+      expect(workerManager.getAssignment('mineStone', 'basicWorker')).toBe(0)
+    })
+
+    it('should handle trying to assign when starting with zero workers', () => {
+      resourceManager.set('basicWorker', 0)
+      const result = workerManager.assign('chopWood', 'basicWorker', 1)
+      expect(result).toBe(false)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(0)
+    })
+
+    it('should floor fractional worker counts', () => {
+      workerManager.assign('chopWood', 'basicWorker', 3.7)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(3)
+    })
+
+    it('should handle very large worker counts', () => {
+      resourceManager.add('basicWorker', 1000000)
+      workerManager.assign('chopWood', 'basicWorker', 999999)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(999999)
+    })
+  })
+
+  describe('Edge Cases - Worker Removal', () => {
+    it('should handle removing from activity with no workers assigned', () => {
+      // Should not throw
+      expect(() => workerManager.unassign('chopWood', 'basicWorker')).not.toThrow()
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(0)
+    })
+
+    it('should handle removing all workers from activity with none assigned', () => {
+      expect(() => workerManager.unassignAll('chopWood')).not.toThrow()
+      expect(workerManager.getActivityAssignments('chopWood')).toEqual({})
+    })
+
+    it('should handle removing from non-existent activity', () => {
+      expect(() => workerManager.unassign('nonExistentActivity', 'basicWorker')).not.toThrow()
+    })
+
+    it('should handle removing non-existent worker type', () => {
+      workerManager.assign('chopWood', 'basicWorker', 3)
+      expect(() => workerManager.unassign('chopWood', 'nonExistentWorker')).not.toThrow()
+    })
+  })
+
+  describe('Edge Cases - Invalid Inputs', () => {
+    it('should handle null activity ID gracefully', () => {
+      expect(workerManager.getActivityAssignments(null)).toEqual({})
+    })
+
+    it('should handle undefined activity ID gracefully', () => {
+      expect(workerManager.getActivityAssignments(undefined)).toEqual({})
+    })
+
+    it('should handle empty string activity ID', () => {
+      expect(workerManager.getActivityAssignments('')).toEqual({})
+    })
+
+    it('should return 0 for non-existent worker type', () => {
+      expect(workerManager.getAvailableWorkers('nonExistentWorker')).toBe(0)
+    })
+
+    it('should return 0 for null worker type', () => {
+      expect(workerManager.getAvailableWorkers(null)).toBe(0)
+    })
+  })
+
+  describe('Edge Cases - Boundary Conditions', () => {
+    it('should handle assigning and unassigning same worker multiple times', () => {
+      workerManager.assign('chopWood', 'basicWorker', 5)
+      workerManager.unassign('chopWood', 'basicWorker')
+      workerManager.assign('chopWood', 'basicWorker', 3)
+      workerManager.unassign('chopWood', 'basicWorker')
+
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(0)
+      expect(workerManager.getAvailableWorkers('basicWorker')).toBe(10)
+    })
+
+    it('should handle reducing assignment count when some workers consumed', () => {
+      workerManager.assign('chopWood', 'basicWorker', 8)
+      // Simulate some workers being used up (player loses workers)
+      resourceManager.set('basicWorker', 5)
+
+      // Should be able to reduce to 3 (less than current assignment)
+      workerManager.assign('chopWood', 'basicWorker', 3)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(3)
+    })
+
+    it('should handle increasing assignment when workers become available', () => {
+      workerManager.assign('chopWood', 'basicWorker', 5)
+      resourceManager.add('basicWorker', 10) // Now have 15 total
+
+      // Should be able to increase to 15 (10 more available)
+      workerManager.assign('chopWood', 'basicWorker', 15)
+      expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(15)
+    })
+
+    it('should handle speed multiplier with exactly 1 worker', () => {
+      workerManager.assign('chopWood', 'basicWorker', 1)
+      const speed = workerManager.getSpeedMultiplier('chopWood')
+      expect(speed).toBeGreaterThan(0)
+      expect(speed).toBeLessThanOrEqual(1)
+    })
+
+    it('should return 0 speed for activity with workers assigned but then removed', () => {
+      workerManager.assign('chopWood', 'basicWorker', 5)
+      workerManager.unassignAll('chopWood')
+      expect(workerManager.getSpeedMultiplier('chopWood')).toBe(0)
+    })
+  })
+
+  describe('Edge Cases - State Management', () => {
+    it('should handle loading null state', () => {
+      expect(() => workerManager.loadState(null)).not.toThrow()
+    })
+
+    it('should handle loading undefined state', () => {
+      expect(() => workerManager.loadState(undefined)).not.toThrow()
+    })
+
+    it('should handle loading state with invalid assignments', () => {
+      const invalidState = {
+        assignments: {
+          chopWood: 'invalid'
+        }
+      }
+      expect(() => workerManager.loadState(invalidState)).not.toThrow()
+    })
+
+    it('should preserve other assignments when loading partial state', () => {
+      workerManager.assign('chopWood', 'basicWorker', 5)
+      workerManager.loadState({
+        assignments: {
+          mineStone: { tractorWorker: 2 }
+        }
+      })
+
+      // New assignment should be loaded
+      expect(workerManager.getAssignment('mineStone', 'tractorWorker')).toBe(2)
     })
   })
 })

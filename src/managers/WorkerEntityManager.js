@@ -5,10 +5,10 @@ import { WorkerEntity } from '../entities/WorkerEntity.js'
  * Handles spawning, assignment, and updating workers
  */
 export class WorkerEntityManager {
-  constructor(eventBus, currencyManager) {
+  constructor(eventBus, resourceManager) {
     this.workers = new Map()
     this.eventBus = eventBus
-    this.currencyManager = currencyManager
+    this.resourceManager = resourceManager
 
     // Home position (right side of screen)
     this.homePosition = { x: 850, y: 300 }
@@ -48,7 +48,7 @@ export class WorkerEntityManager {
    */
   update(deltaTime, resourceNodes) {
     this.workers.forEach(worker => {
-      worker.update(deltaTime, resourceNodes, this.currencyManager)
+      worker.update(deltaTime, resourceNodes, this.resourceManager)
     })
   }
 
@@ -185,13 +185,13 @@ export class WorkerEntityManager {
   }
 
   /**
-   * Sync workers with currency inventory
-   * Spawns/despawns workers to match owned worker currencies
-   * @param {CurrencyManager} currencyManager
+   * Sync workers with resource inventory
+   * Spawns/despawns workers to match owned worker resources
+   * @param {ResourceManager} resourceManager
    */
-  syncWithCurrency(currencyManager) {
+  syncWithCurrency(resourceManager) {
     this.workerTypes.forEach((stats, workerType) => {
-      const owned = currencyManager.get(workerType) || 0
+      const owned = resourceManager.get(workerType) || 0
       const existing = this.getWorkersByType(workerType)
 
       // Spawn missing workers
@@ -314,9 +314,9 @@ export class WorkerEntityManager {
   /**
    * Load state from save
    * @param {Object} state
-   * @param {CurrencyManager} currencyManager
+   * @param {ResourceManager} resourceManager
    */
-  loadState(state, currencyManager) {
+  loadState(state, resourceManager) {
     if (!state) return
 
     // Clear existing workers

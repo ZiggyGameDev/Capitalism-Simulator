@@ -13,7 +13,8 @@ describe('Offline Progress', () => {
   describe('calculateOfflineProgress', () => {
     it('should return zero progress if no activities were running', () => {
       const result = game.calculateOfflineProgress(60000, {
-        currencies: {},
+        version: 2,
+        resources: {},
         skills: {},
         workers: { assignments: {} }
       })
@@ -25,7 +26,8 @@ describe('Offline Progress', () => {
     it('should simulate activity completions during offline time', () => {
       // Start a free activity (chop normal tree - 2 seconds) with workers assigned
       const state = {
-        currencies: { basicWorker: 1 },
+        version: 2,
+        resources: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
         workers: {
           assignments: {
@@ -41,10 +43,11 @@ describe('Offline Progress', () => {
       expect(result.totalTime).toBe(10000)
     })
 
-    it('should respect currency requirements for activities', () => {
-      // Activity needs inputs but state has no currencies
+    it('should respect resource requirements for activities', () => {
+      // Activity needs inputs but state has no resources
       const state = {
-        currencies: { basicWorker: 1 },
+        version: 2,
+        resources: { basicWorker: 1 },
         skills: { cooking: { xp: 50, level: 2 } },
         workers: {
           assignments: {
@@ -59,9 +62,10 @@ describe('Offline Progress', () => {
       expect(result.activitiesCompleted.length).toBe(0)
     })
 
-    it('should award currencies from completed activities', () => {
+    it('should award resources from completed activities', () => {
       const state = {
-        currencies: { basicWorker: 1 },
+        version: 2,
+        resources: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
         workers: {
           assignments: {
@@ -73,12 +77,13 @@ describe('Offline Progress', () => {
       const result = game.calculateOfflineProgress(10000, state)
 
       // Should have earned wood
-      expect(result.currenciesEarned.wood).toBeGreaterThan(0)
+      expect(result.resourcesEarned.wood).toBeGreaterThan(0)
     })
 
     it('should award XP from completed activities', () => {
       const state = {
-        currencies: { basicWorker: 1 },
+        version: 2,
+        resources: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
         workers: {
           assignments: {
@@ -95,7 +100,8 @@ describe('Offline Progress', () => {
 
     it('should cap offline progress at 8 hours', () => {
       const state = {
-        currencies: { basicWorker: 1 },
+        version: 2,
+        resources: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
         workers: {
           assignments: {
@@ -115,7 +121,8 @@ describe('Offline Progress', () => {
 
     it('should handle multiple simultaneous activities', () => {
       const state = {
-        currencies: { basicWorker: 2 },
+        version: 2,
+        resources: { basicWorker: 2 },
         skills: {
           woodcutting: { xp: 0, level: 1 },
           mining: { xp: 0, level: 1 }
@@ -132,14 +139,15 @@ describe('Offline Progress', () => {
 
       // Should have completed both activities
       expect(result.activitiesCompleted.length).toBeGreaterThan(0)
-      expect(result.currenciesEarned.wood).toBeGreaterThan(0)
-      expect(result.currenciesEarned.copperOre).toBeGreaterThan(0)
+      expect(result.resourcesEarned.wood).toBeGreaterThan(0)
+      expect(result.resourcesEarned.copperOre).toBeGreaterThan(0)
     })
 
     it('should stop processing activity when resources run out', () => {
       // Start with limited resources
       const state = {
-        currencies: {
+        version: 2,
+        resources: {
           basicWorker: 1,
           shrimp: 2  // Only enough for 2 completions
         },
@@ -162,7 +170,8 @@ describe('Offline Progress', () => {
     it('should handle production chains correctly', () => {
       // Have resources to run a production chain
       const state = {
-        currencies: {
+        version: 2,
+        resources: {
           basicWorker: 1,
           puppy: 3,
           cookedShrimp: 10
@@ -181,29 +190,29 @@ describe('Offline Progress', () => {
       // Should complete 3 times (limited by 3 puppies)
       const trainCompletions = result.activitiesCompleted.find(a => a.activityId === 'trainGuardDog')
       expect(trainCompletions.completions).toBe(3)
-      expect(result.currenciesEarned.guardDog).toBe(3)
-      expect(result.currenciesEarned.bones).toBe(6) // 2 bones per completion
+      expect(result.resourcesEarned.guardDog).toBe(3)
+      expect(result.resourcesEarned.bones).toBe(6) // 2 bones per completion
     })
   })
 
   describe('applyOfflineProgress', () => {
     it('should apply calculated offline progress to game state', () => {
       // Set up a saved state
-      game.currencyManager.set('wood', 0)
+      game.resourceManager.set('wood', 0)
       game.skillManager.addXP('woodcutting', 0)
 
       const offlineResult = {
         activitiesCompleted: [
           { activityId: 'chopNormalTree', completions: 5 }
         ],
-        currenciesEarned: { wood: 5 },
+        resourcesEarned: { wood: 5 },
         xpEarned: { woodcutting: 25 },
         totalTime: 10000
       }
 
       game.applyOfflineProgress(offlineResult)
 
-      expect(game.currencyManager.get('wood')).toBe(5)
+      expect(game.resourceManager.get('wood')).toBe(5)
       expect(game.skillManager.getXP('woodcutting')).toBe(25)
     })
 
@@ -218,7 +227,7 @@ describe('Offline Progress', () => {
 
       const offlineResult = {
         activitiesCompleted: [{ activityId: 'chopNormalTree', completions: 5 }],
-        currenciesEarned: { wood: 5 },
+        resourcesEarned: { wood: 5 },
         xpEarned: { woodcutting: 25 },
         totalTime: 10000
       }
@@ -227,7 +236,7 @@ describe('Offline Progress', () => {
 
       expect(eventEmitted).toBe(true)
       expect(eventData.totalTime).toBe(10000)
-      expect(eventData.currenciesEarned.wood).toBe(5)
+      expect(eventData.resourcesEarned.wood).toBe(5)
     })
   })
 
@@ -237,7 +246,8 @@ describe('Offline Progress', () => {
       const tenSecondsAgo = now - 10000
 
       const state = {
-        currencies: { basicWorker: 1 },
+        version: 2,
+        resources: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
         workers: {
           assignments: {
@@ -250,12 +260,13 @@ describe('Offline Progress', () => {
       game.loadState(state)
 
       // Should have earned wood from offline progress
-      expect(game.currencyManager.get('wood')).toBeGreaterThan(0)
+      expect(game.resourceManager.get('wood')).toBeGreaterThan(0)
     })
 
     it('should not apply offline progress if no lastSaveTime', () => {
       const state = {
-        currencies: { basicWorker: 1 },
+        version: 2,
+        resources: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
         workers: {
           assignments: {
@@ -268,7 +279,7 @@ describe('Offline Progress', () => {
       game.loadState(state)
 
       // Should not have earned anything
-      expect(game.currencyManager.get('wood')).toBe(0)
+      expect(game.resourceManager.get('wood')).toBe(0)
     })
   })
 })

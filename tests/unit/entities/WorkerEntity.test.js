@@ -4,7 +4,7 @@ import { WorkerEntity } from '../../../src/entities/WorkerEntity.js'
 describe('WorkerEntity', () => {
   let worker
   let mockResourceNodes
-  let mockCurrencyManager
+  let mockResourceManager
 
   const homePosition = { x: 850, y: 300 }
   const nodePosition = { x: 100, y: 200 }
@@ -22,8 +22,8 @@ describe('WorkerEntity', () => {
       harvest: vi.fn(() => true)
     })
 
-    // Mock currency manager
-    mockCurrencyManager = {
+    // Mock resource manager
+    mockResourceManager = {
       add: vi.fn()
     }
   })
@@ -162,7 +162,7 @@ describe('WorkerEntity', () => {
 
   describe('state machine - idle', () => {
     it('should stay idle if not assigned', () => {
-      worker.update(1000, mockResourceNodes, mockCurrencyManager)
+      worker.update(1000, mockResourceNodes, mockResourceManager)
 
       expect(worker.state).toBe('idle')
     })
@@ -170,7 +170,7 @@ describe('WorkerEntity', () => {
     it('should start walking when assigned and node has resources', () => {
       worker.assignTo('wheat_field')
 
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
 
       expect(worker.state).toBe('walking_to')
       expect(worker.destination).toEqual(nodePosition)
@@ -180,7 +180,7 @@ describe('WorkerEntity', () => {
       mockResourceNodes.get('wheat_field').canHarvest = vi.fn(() => false)
       worker.assignTo('wheat_field')
 
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
 
       expect(worker.state).toBe('idle')
     })
@@ -195,7 +195,7 @@ describe('WorkerEntity', () => {
     it('should move toward destination', () => {
       const startX = worker.position.x
 
-      worker.update(1000, mockResourceNodes, mockCurrencyManager) // 1 second at 150 px/s
+      worker.update(1000, mockResourceNodes, mockResourceManager) // 1 second at 150 px/s
 
       expect(worker.position.x).toBeLessThan(startX) // Moving left
       expect(worker.totalDistanceTraveled).toBeGreaterThan(0)
@@ -204,7 +204,7 @@ describe('WorkerEntity', () => {
     it('should transition to harvesting when arrived', () => {
       worker.position = { x: 102, y: 202 } // Very close
 
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
 
       expect(worker.state).toBe('harvesting')
       expect(worker.stateTimer).toBe(0)
@@ -213,7 +213,7 @@ describe('WorkerEntity', () => {
     it('should return to idle if destination is lost', () => {
       worker.destination = null
 
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
 
       expect(worker.state).toBe('idle')
     })
@@ -227,7 +227,7 @@ describe('WorkerEntity', () => {
     })
 
     it('should wait for harvest duration', () => {
-      worker.update(1000, mockResourceNodes, mockCurrencyManager) // 1 second (need 2)
+      worker.update(1000, mockResourceNodes, mockResourceManager) // 1 second (need 2)
 
       expect(worker.state).toBe('harvesting')
       expect(mockResourceNodes.get('wheat_field').harvest).not.toHaveBeenCalled()
@@ -236,7 +236,7 @@ describe('WorkerEntity', () => {
     it('should harvest after duration completes', () => {
       worker.harvestSpeedMultiplier = 1.0 // 2 seconds to harvest
 
-      worker.update(2000, mockResourceNodes, mockCurrencyManager)
+      worker.update(2000, mockResourceNodes, mockResourceManager)
 
       expect(mockResourceNodes.get('wheat_field').harvest).toHaveBeenCalled()
       expect(worker.carrying).toEqual({ wheat: 1 })
@@ -247,7 +247,7 @@ describe('WorkerEntity', () => {
     it('should harvest faster with speed multiplier', () => {
       worker.harvestSpeedMultiplier = 2.0 // 1 second to harvest (2s / 2.0)
 
-      worker.update(1000, mockResourceNodes, mockCurrencyManager)
+      worker.update(1000, mockResourceNodes, mockResourceManager)
 
       expect(worker.carrying).toEqual({ wheat: 1 })
       expect(worker.state).toBe('walking_back')
@@ -256,7 +256,7 @@ describe('WorkerEntity', () => {
     it('should return to idle if node disappears', () => {
       mockResourceNodes.delete('wheat_field')
 
-      worker.update(3000, mockResourceNodes, mockCurrencyManager)
+      worker.update(3000, mockResourceNodes, mockResourceManager)
 
       expect(worker.state).toBe('idle')
       expect(worker.carrying).toBeNull()
@@ -265,7 +265,7 @@ describe('WorkerEntity', () => {
     it('should return to idle if harvest fails', () => {
       mockResourceNodes.get('wheat_field').harvest = vi.fn(() => false)
 
-      worker.update(2000, mockResourceNodes, mockCurrencyManager)
+      worker.update(2000, mockResourceNodes, mockResourceManager)
 
       expect(worker.state).toBe('idle')
       expect(worker.carrying).toBeNull()
@@ -282,7 +282,7 @@ describe('WorkerEntity', () => {
     it('should move toward home', () => {
       const startX = worker.position.x
 
-      worker.update(1000, mockResourceNodes, mockCurrencyManager) // 1 second at 90 px/s (slower)
+      worker.update(1000, mockResourceNodes, mockResourceManager) // 1 second at 90 px/s (slower)
 
       expect(worker.position.x).toBeGreaterThan(startX) // Moving right (toward home)
       expect(worker.totalDistanceTraveled).toBeGreaterThan(0)
@@ -294,7 +294,7 @@ describe('WorkerEntity', () => {
         Math.pow(homePosition.y - worker.position.y, 2)
       )
 
-      worker.update(1000, mockResourceNodes, mockCurrencyManager) // 1 second at 90 px/s
+      worker.update(1000, mockResourceNodes, mockResourceManager) // 1 second at 90 px/s
 
       const movedDistance = worker.totalDistanceTraveled
       expect(movedDistance).toBeCloseTo(90, 0) // Carry speed, not walk speed
@@ -303,7 +303,7 @@ describe('WorkerEntity', () => {
     it('should transition to depositing when arrived home', () => {
       worker.position = { x: 848, y: 298 } // Very close to home
 
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
 
       expect(worker.state).toBe('depositing')
       expect(worker.stateTimer).toBe(0)
@@ -320,17 +320,17 @@ describe('WorkerEntity', () => {
     })
 
     it('should wait for random offset delay', () => {
-      worker.update(100, mockResourceNodes, mockCurrencyManager) // 0.1 seconds (need 0.3)
+      worker.update(100, mockResourceNodes, mockResourceManager) // 0.1 seconds (need 0.3)
 
       expect(worker.state).toBe('depositing')
-      expect(mockCurrencyManager.add).not.toHaveBeenCalled()
+      expect(mockResourceManager.add).not.toHaveBeenCalled()
     })
 
     it('should deposit resources after delay', () => {
-      worker.update(300, mockResourceNodes, mockCurrencyManager) // 0.3 seconds
+      worker.update(300, mockResourceNodes, mockResourceManager) // 0.3 seconds
 
-      expect(mockCurrencyManager.add).toHaveBeenCalledWith('wheat', 1)
-      expect(mockCurrencyManager.add).toHaveBeenCalledWith('wood', 2)
+      expect(mockResourceManager.add).toHaveBeenCalledWith('wheat', 1)
+      expect(mockResourceManager.add).toHaveBeenCalledWith('wood', 2)
       expect(worker.carrying).toBeNull()
       expect(worker.state).toBe('idle')
     })
@@ -338,14 +338,14 @@ describe('WorkerEntity', () => {
     it('should regenerate random offset after deposit', () => {
       const oldOffset = worker.randomOffset
 
-      worker.update(300, mockResourceNodes, mockCurrencyManager)
+      worker.update(300, mockResourceNodes, mockResourceManager)
 
       // Offset should be regenerated (can't test exact value due to randomness)
       expect(worker.randomOffset).toBeGreaterThanOrEqual(0)
       expect(worker.randomOffset).toBeLessThanOrEqual(0.5)
     })
 
-    it('should handle null currency manager gracefully', () => {
+    it('should handle null resource manager gracefully', () => {
       expect(() => {
         worker.update(300, mockResourceNodes, null)
       }).not.toThrow()
@@ -479,29 +479,29 @@ describe('WorkerEntity', () => {
       expect(worker.state).toBe('idle')
 
       // Update 1: Transition to walking_to
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
       expect(worker.state).toBe('walking_to')
 
       // Simulate arrival at node
       worker.position = { ...nodePosition }
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
       expect(worker.state).toBe('harvesting')
 
       // Complete harvest (2 seconds)
-      worker.update(2000, mockResourceNodes, mockCurrencyManager)
+      worker.update(2000, mockResourceNodes, mockResourceManager)
       expect(worker.state).toBe('walking_back')
       expect(worker.carrying).toEqual({ wheat: 1 })
 
       // Simulate arrival at home
       worker.position = { ...homePosition }
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
       expect(worker.state).toBe('depositing')
 
       // Complete deposit (0.1 seconds)
-      worker.update(100, mockResourceNodes, mockCurrencyManager)
+      worker.update(100, mockResourceNodes, mockResourceManager)
       expect(worker.state).toBe('idle')
       expect(worker.carrying).toBeNull()
-      expect(mockCurrencyManager.add).toHaveBeenCalledWith('wheat', 1)
+      expect(mockResourceManager.add).toHaveBeenCalledWith('wheat', 1)
       expect(worker.totalHarvests).toBe(1)
     })
   })

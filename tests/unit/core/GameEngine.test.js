@@ -29,7 +29,7 @@ describe('GameEngine - Save/Load System', () => {
     it('should return complete game state', () => {
       const state = engine.getState()
 
-      expect(state).toHaveProperty('currencies')
+      expect(state).toHaveProperty('resources')
       expect(state).toHaveProperty('skills')
       expect(state).toHaveProperty('upgrades')
       expect(state).toHaveProperty('workers')
@@ -43,30 +43,32 @@ describe('GameEngine - Save/Load System', () => {
       expect(state.skills.farming.xp).toBe(100)
     })
 
-    it('should include currencies in state', () => {
-      engine.currencyManager.add('wheat', 50)
+    it('should include resources in state', () => {
+      engine.resourceManager.add('wheat', 50)
       const state = engine.getState()
 
-      expect(state.currencies.wheat).toBe(50)
+      expect(state.resources.wheat).toBe(50)
     })
   })
 
   describe('loadState()', () => {
-    it('should restore currency amounts', () => {
+    it('should restore resource amounts', () => {
       const state = {
-        currencies: { wheat: 100, wood: 50 },
+        version: 2,
+        resources: { wheat: 100, wood: 50 },
         skills: {}
       }
 
       engine.loadState(state)
 
-      expect(engine.currencyManager.get('wheat')).toBe(100)
-      expect(engine.currencyManager.get('wood')).toBe(50)
+      expect(engine.resourceManager.get('wheat')).toBe(100)
+      expect(engine.resourceManager.get('wood')).toBe(50)
     })
 
     it('should restore skill XP', () => {
       const state = {
-        currencies: {},
+        version: 2,
+        resources: {},
         skills: {
           farming: { xp: 150, level: 3 }
         }
@@ -80,7 +82,8 @@ describe('GameEngine - Save/Load System', () => {
     it('should NOT duplicate XP on repeated loads (BUG FIX)', () => {
       // This test verifies the fix for Bug #4
       const state = {
-        currencies: {},
+        version: 2,
+        resources: {},
         skills: {
           farming: { xp: 100, level: 2 }
         }
@@ -102,21 +105,24 @@ describe('GameEngine - Save/Load System', () => {
     it('should handle loading different XP values correctly', () => {
       // Load first state
       engine.loadState({
-        currencies: {},
+        version: 2,
+        resources: {},
         skills: { farming: { xp: 100, level: 2 } }
       })
       expect(engine.skillManager.getXP('farming')).toBe(100)
 
       // Load second state with different XP
       engine.loadState({
-        currencies: {},
+        version: 2,
+        resources: {},
         skills: { farming: { xp: 250, level: 4 } }
       })
       expect(engine.skillManager.getXP('farming')).toBe(250) // Should be 250, not 350!
 
       // Load original state again
       engine.loadState({
-        currencies: {},
+        version: 2,
+        resources: {},
         skills: { farming: { xp: 100, level: 2 } }
       })
       expect(engine.skillManager.getXP('farming')).toBe(100) // Should be 100, not 350!
@@ -124,11 +130,11 @@ describe('GameEngine - Save/Load System', () => {
   })
 
   describe('reset()', () => {
-    it('should reset currencies to zero', () => {
-      engine.currencyManager.add('wheat', 100)
+    it('should reset resources to zero', () => {
+      engine.resourceManager.add('wheat', 100)
       engine.reset()
 
-      expect(engine.currencyManager.get('wheat')).toBe(0)
+      expect(engine.resourceManager.get('wheat')).toBe(0)
     })
 
     it('should reset skills to level 1 with 0 XP', () => {
@@ -140,17 +146,18 @@ describe('GameEngine - Save/Load System', () => {
     })
 
     it('should reset workers to zero after reset', () => {
-      engine.currencyManager.add('basicWorker', 5)
+      engine.resourceManager.add('basicWorker', 5)
       engine.reset()
-      expect(engine.currencyManager.get('basicWorker')).toBe(0)
+      // Reset now gives 1 starting worker for new games
+      expect(engine.resourceManager.get('basicWorker')).toBe(1)
     })
   })
 
   describe('Save/Load Round Trip', () => {
     it('should preserve all data through save/load cycle', () => {
       // Set up game state
-      engine.currencyManager.add('wheat', 100)
-      engine.currencyManager.add('wood', 50)
+      engine.resourceManager.add('wheat', 100)
+      engine.resourceManager.add('wood', 50)
       engine.skillManager.addXP('farming', 150)
 
       // Save state
@@ -161,32 +168,32 @@ describe('GameEngine - Save/Load System', () => {
       newEngine.loadState(savedState)
 
       // Verify all data is preserved
-      expect(newEngine.currencyManager.get('wheat')).toBe(100)
-      expect(newEngine.currencyManager.get('wood')).toBe(50)
+      expect(newEngine.resourceManager.get('wheat')).toBe(100)
+      expect(newEngine.resourceManager.get('wood')).toBe(50)
       expect(newEngine.skillManager.getXP('farming')).toBe(150)
     })
 
     it('should handle multiple save/load cycles without data corruption', () => {
       // Initial state
-      engine.currencyManager.add('wheat', 100)
+      engine.resourceManager.add('wheat', 100)
       engine.skillManager.addXP('farming', 200)
 
       // Cycle 1: Save and load
       let state = engine.getState()
       engine.loadState(state)
-      expect(engine.currencyManager.get('wheat')).toBe(100)
+      expect(engine.resourceManager.get('wheat')).toBe(100)
       expect(engine.skillManager.getXP('farming')).toBe(200)
 
       // Cycle 2: Save and load again
       state = engine.getState()
       engine.loadState(state)
-      expect(engine.currencyManager.get('wheat')).toBe(100)
+      expect(engine.resourceManager.get('wheat')).toBe(100)
       expect(engine.skillManager.getXP('farming')).toBe(200)
 
       // Cycle 3: Save and load a third time
       state = engine.getState()
       engine.loadState(state)
-      expect(engine.currencyManager.get('wheat')).toBe(100)
+      expect(engine.resourceManager.get('wheat')).toBe(100)
       expect(engine.skillManager.getXP('farming')).toBe(200)
     })
   })
@@ -224,8 +231,8 @@ describe('GameEngine - Lifecycle', () => {
     expect(engine.isRunning).toBe(false)
   })
 
-  it('should start with no currencies on construction', () => {
-    expect(engine.currencyManager.get('basicWorker')).toBe(0)
-    expect(engine.currencyManager.get('wheat')).toBe(0)
+  it('should start with no resources on construction', () => {
+    expect(engine.resourceManager.get('basicWorker')).toBe(0)
+    expect(engine.resourceManager.get('wheat')).toBe(0)
   })
 })

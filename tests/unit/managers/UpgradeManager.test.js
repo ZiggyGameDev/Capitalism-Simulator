@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { UpgradeManager } from '../../../src/managers/UpgradeManager.js'
 import { EventBus } from '../../../src/core/EventBus.js'
-import { CurrencyManager } from '../../../src/managers/CurrencyManager.js'
+import { ResourceManager } from '../../../src/managers/ResourceManager.js'
 import { SkillManager } from '../../../src/managers/SkillManager.js'
 import { skills } from '../../../src/data/skills.js'
 import { activities } from '../../../src/data/activities.js'
 
 describe('UpgradeManager', () => {
   let upgradeManager
-  let currencyManager
+  let resourceManager
   let skillManager
   let eventBus
 
@@ -58,9 +58,9 @@ describe('UpgradeManager', () => {
 
   beforeEach(() => {
     eventBus = new EventBus()
-    currencyManager = new CurrencyManager()
+    resourceManager = new ResourceManager()
     skillManager = new SkillManager(skills, activities, eventBus)
-    upgradeManager = new UpgradeManager(testUpgrades, currencyManager, skillManager, eventBus)
+    upgradeManager = new UpgradeManager(testUpgrades, resourceManager, skillManager, eventBus)
   })
 
   describe('constructor', () => {
@@ -79,31 +79,31 @@ describe('UpgradeManager', () => {
       expect(upgradeManager.canPurchase('speedUpgrade1')).toBe(false)
     })
 
-    it('should return false if not enough currency', () => {
-      currencyManager.set('wood', 5)
+    it('should return false if not enough resources', () => {
+      resourceManager.set('wood', 5)
       expect(upgradeManager.canPurchase('speedUpgrade1')).toBe(false)
     })
 
     it('should return false if skill level too low', () => {
-      currencyManager.set('wood', 20)
+      resourceManager.set('wood', 20)
       // outputUpgrade1 requires woodcutting level 5, but we're at level 1
       expect(upgradeManager.canPurchase('outputUpgrade1')).toBe(false)
     })
 
     it('should return false if prerequisite not purchased', () => {
-      currencyManager.set('wood', 100)
+      resourceManager.set('wood', 100)
       skillManager.addXP('woodcutting', 305) // Level 10
       // prereqUpgrade requires speedUpgrade1 first
       expect(upgradeManager.canPurchase('prereqUpgrade')).toBe(false)
     })
 
     it('should return true if all requirements met', () => {
-      currencyManager.set('wood', 20)
+      resourceManager.set('wood', 20)
       expect(upgradeManager.canPurchase('speedUpgrade1')).toBe(true)
     })
 
     it('should return true if prerequisite is purchased', () => {
-      currencyManager.set('wood', 100)
+      resourceManager.set('wood', 100)
       skillManager.addXP('woodcutting', 305) // Level 10
       upgradeManager.purchased.push('speedUpgrade1')
       expect(upgradeManager.canPurchase('prereqUpgrade')).toBe(true)
@@ -115,14 +115,14 @@ describe('UpgradeManager', () => {
       expect(() => upgradeManager.purchase('speedUpgrade1')).toThrow('Cannot purchase upgrade')
     })
 
-    it('should deduct currency costs', () => {
-      currencyManager.set('wood', 20)
+    it('should deduct resource costs', () => {
+      resourceManager.set('wood', 20)
       upgradeManager.purchase('speedUpgrade1')
-      expect(currencyManager.get('wood')).toBe(10)
+      expect(resourceManager.get('wood')).toBe(10)
     })
 
     it('should add upgrade to purchased list', () => {
-      currencyManager.set('wood', 20)
+      resourceManager.set('wood', 20)
       upgradeManager.purchase('speedUpgrade1')
       expect(upgradeManager.purchased).toContain('speedUpgrade1')
     })
@@ -136,7 +136,7 @@ describe('UpgradeManager', () => {
         eventData = data
       })
 
-      currencyManager.set('wood', 20)
+      resourceManager.set('wood', 20)
       upgradeManager.purchase('speedUpgrade1')
 
       expect(eventEmitted).toBe(true)
@@ -144,7 +144,7 @@ describe('UpgradeManager', () => {
     })
 
     it('should purchase multiple upgrades', () => {
-      currencyManager.set('wood', 50)
+      resourceManager.set('wood', 50)
       skillManager.addXP('woodcutting', 152) // Level 5
 
       upgradeManager.purchase('speedUpgrade1')
@@ -152,7 +152,7 @@ describe('UpgradeManager', () => {
 
       expect(upgradeManager.purchased).toContain('speedUpgrade1')
       expect(upgradeManager.purchased).toContain('outputUpgrade1')
-      expect(currencyManager.get('wood')).toBe(20) // 50 - 10 - 20
+      expect(resourceManager.get('wood')).toBe(20) // 50 - 10 - 20
     })
   })
 
@@ -185,14 +185,14 @@ describe('UpgradeManager', () => {
     })
 
     it('should return speed multiplier for purchased upgrade', () => {
-      currencyManager.set('wood', 20)
+      resourceManager.set('wood', 20)
       upgradeManager.purchase('speedUpgrade1')
       // 20% faster = 0.8 multiplier (80% of original time)
       expect(upgradeManager.getSpeedMultiplier('chopNormalTree')).toBe(0.8)
     })
 
     it('should stack multiple speed upgrades', () => {
-      currencyManager.set('wood', 100)
+      resourceManager.set('wood', 100)
       skillManager.addXP('woodcutting', 305) // Level 10
       upgradeManager.purchase('speedUpgrade1') // 20% faster
       upgradeManager.purchase('prereqUpgrade') // 40% faster
@@ -207,7 +207,7 @@ describe('UpgradeManager', () => {
     })
 
     it('should return output bonus for purchased upgrade', () => {
-      currencyManager.set('wood', 30)
+      resourceManager.set('wood', 30)
       skillManager.addXP('woodcutting', 152) // Level 5
       upgradeManager.purchase('outputUpgrade1')
       expect(upgradeManager.getOutputBonus('chopNormalTree')).toEqual({ wood: 1 })
@@ -224,7 +224,7 @@ describe('UpgradeManager', () => {
         skillRequired: { woodcutting: 1 }
       })
 
-      currencyManager.set('wood', 100)
+      resourceManager.set('wood', 100)
       skillManager.addXP('woodcutting', 152) // Level 5
       upgradeManager.purchase('outputUpgrade1') // +1 wood
       upgradeManager.purchase('outputUpgrade2') // +2 wood, +1 oakWood
@@ -241,7 +241,7 @@ describe('UpgradeManager', () => {
     })
 
     it('should return cost reduction for purchased upgrade', () => {
-      currencyManager.set('cookedShrimp', 50)
+      resourceManager.set('cookedShrimp', 50)
       skillManager.addXP('cooking', 305) // Level 10
       upgradeManager.purchase('costUpgrade1')
       expect(upgradeManager.getCostReduction('cookShrimp')).toBe(0.5)
@@ -258,7 +258,7 @@ describe('UpgradeManager', () => {
         skillRequired: { cooking: 1 }
       })
 
-      currencyManager.set('cookedShrimp', 100)
+      resourceManager.set('cookedShrimp', 100)
       skillManager.addXP('cooking', 305) // Level 10
       upgradeManager.purchase('costUpgrade1') // 50% reduction
       upgradeManager.purchase('costUpgrade2') // 60% reduction
@@ -269,7 +269,7 @@ describe('UpgradeManager', () => {
 
   describe('reset', () => {
     it('should clear all purchased upgrades', () => {
-      currencyManager.set('wood', 50)
+      resourceManager.set('wood', 50)
       upgradeManager.purchase('speedUpgrade1')
       upgradeManager.purchased = ['speedUpgrade1', 'outputUpgrade1']
 
@@ -281,13 +281,13 @@ describe('UpgradeManager', () => {
 
   describe('getState and loadState', () => {
     it('should save and restore purchased upgrades', () => {
-      currencyManager.set('wood', 50)
+      resourceManager.set('wood', 50)
       upgradeManager.purchase('speedUpgrade1')
 
       const state = upgradeManager.getState()
       expect(state.purchased).toContain('speedUpgrade1')
 
-      const newUpgradeManager = new UpgradeManager(testUpgrades, currencyManager, skillManager, eventBus)
+      const newUpgradeManager = new UpgradeManager(testUpgrades, resourceManager, skillManager, eventBus)
       newUpgradeManager.loadState(state)
 
       expect(newUpgradeManager.isPurchased('speedUpgrade1')).toBe(true)
