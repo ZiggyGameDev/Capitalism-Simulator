@@ -735,6 +735,7 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  min-height: 24px; /* Reserve vertical space */
 }
 
 .worker-btn-remove-all {
@@ -753,6 +754,11 @@ body {
 .worker-btn-remove-all:hover {
   background: #da190b;
   transform: scale(1.05);
+}
+
+.worker-btn-remove-all.hidden {
+  visibility: hidden; /* Hide but keep space */
+  pointer-events: none; /* Disable clicks when hidden */
 }
 
 /* Halted Activity Styling */

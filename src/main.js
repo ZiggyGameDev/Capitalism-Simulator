@@ -219,18 +219,14 @@ function renderActivityList(skillId) {
     if (unlocked) {
       workerAssignmentHTML = '<div class="activity-worker-assignments">'
 
-      // Add "Remove All Workers" button if any workers are assigned
+      // Always show header with "Remove All" button (hide when no workers to prevent layout shift)
       const hasWorkersAssigned = Object.values(workerAssignments).some(count => count > 0)
-      if (hasWorkersAssigned) {
-        workerAssignmentHTML += `
-          <div class="worker-assignment-header">
-            <span class="worker-assignment-title">Assign Workers:</span>
-            <button class="worker-btn-remove-all" data-activity="${activity.id}" title="Remove all workers from this activity">Remove All</button>
-          </div>
-        `
-      } else {
-        workerAssignmentHTML += '<div class="worker-assignment-title">Assign Workers:</div>'
-      }
+      workerAssignmentHTML += `
+        <div class="worker-assignment-header">
+          <span class="worker-assignment-title">Assign Workers:</span>
+          <button class="worker-btn-remove-all ${!hasWorkersAssigned ? 'hidden' : ''}" data-activity="${activity.id}" title="Remove all workers from this activity">Remove All</button>
+        </div>
+      `
 
       // Show assignments for each worker type that exists
       let hasAnyWorkerControls = false
