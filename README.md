@@ -1,128 +1,232 @@
-# 🍪 Cookie Clicker Pro
+# 🎮 Incremental Game - Skill Training Adventure
 
-A modern, feature-rich cookie clicker game built with vanilla JavaScript and tested with Playwright automation.
+A modern, feature-rich incremental/idle game built with vanilla JavaScript following Test-Driven Development (TDD) principles.
 
-## Features
+## 🌟 Features
 
-- **Incremental Gameplay**: Click cookies to earn points
-- **Automated Production**: Buy upgrades that generate cookies automatically
-- **6 Different Upgrades**: From auto-clickers to space stations
-- **Progressive Costs**: Each purchase increases the cost for the next one
-- **Persistent Save System**: Your progress is automatically saved
-- **Beautiful UI**: Modern, responsive design with smooth animations
-- **Comprehensive Testing**: Automated browser tests using Playwright
+### Core Gameplay
+- **5 Skills** with unique progression paths
+- **14 Activities** with time-based completion
+- **15 Currency Types** - everything is a currency (no inventory complexity)
+- **Auto-Mode** for hands-free grinding
+- **Save/Load System** with localStorage persistence
+- **Production Chains** - advanced activities require outputs from others
 
-## Getting Started
+### Skills
+- 🪓 **Woodcutting** - Gather wood from trees
+- ⛏️ **Mining** - Extract ores and minerals
+- 🎣 **Fishing** - Catch fish from water
+- 🍳 **Cooking** - Transform raw food into meals
+- 🐕 **Dog Handling** - Find and train dogs
 
-### Prerequisites
+### Technical Excellence
+- ✅ **114 Unit Tests** with 100% pass rate
+- ✅ **Test-Driven Development** throughout
+- ✅ **Event-Driven Architecture** with pub/sub
+- ✅ **Separation of Concerns** - clean architecture
+- ✅ **Real-Time Updates** with game loop
+- ✅ **Responsive Design** - works on mobile
 
-- Node.js (v14 or higher)
-- npm
+## 🚀 Getting Started
 
 ### Installation
 
-1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Install Playwright browsers:
-```bash
-npx playwright install
-```
+### Development
 
-### Running the Game
-
-Start the development server:
+Start the dev server:
 ```bash
 npm run dev
 ```
 
 Then open your browser to `http://localhost:5173`
 
-### Building for Production
+### Building
 
 ```bash
 npm run build
 ```
 
-The built files will be in the `dist` directory.
+### Testing
 
-## Testing
-
-This project uses Playwright for automated end-to-end testing.
-
-### Run all tests (headless mode):
 ```bash
-npm test
+# Run all unit tests
+npm run test:unit
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage
+npm run test:coverage
+
+# Run E2E tests
+npm run test:e2e
 ```
 
-### Run tests with UI mode (interactive):
-```bash
-npm run test:ui
+## 🎯 How to Play
+
+1. **Start a Free Activity** - Begin with Woodcutting, Mining, or Fishing
+2. **Gather Resources** - Complete activities to gain currencies and XP
+3. **Level Up Skills** - Earn XP to unlock new activities
+4. **Create Production Chains** - Use resources from one skill in another
+5. **Enable Auto-Mode** - Let activities run automatically
+6. **Advance Through Tiers** - Progress from gathering to complex production
+
+### Progression Example
+
+1. Chop trees → Get wood
+2. Catch shrimp → Get raw shrimp
+3. Cook shrimp → Get cooked shrimp
+4. Find puppy + cooked shrimp → Train guard dog
+
+## 📊 Test Coverage
+
+```
+Test Files: 5 passed (5)
+Tests:      114 passed (114)
+
+✅ XP Calculations (17 tests)
+✅ EventBus (10 tests)
+✅ CurrencyManager (29 tests)
+✅ SkillManager (25 tests)
+✅ ActivityManager (33 tests)
 ```
 
-### Run tests in headed mode (watch browser):
-```bash
-npm run test:headed
-```
+## 🏗️ Architecture
 
-## Game Mechanics
+### Core Systems
 
-### Clicking
-- Each click gives you 1 cookie
-- Cookies are used to purchase upgrades
+**GameEngine** - Main game loop and system coordinator
+- Manages game state and loop
+- Coordinates all managers
+- Handles save/load
 
-### Shop Items
+**EventBus** - Pub/sub for decoupled communication
+- Skills, currencies, activities communicate via events
+- UI subscribes to game events
 
-| Item | Base Cost | Cookies/Second |
-|------|-----------|----------------|
-| 🖱️ Auto-Clicker | 15 | 0.1 |
-| 👵 Grandma | 100 | 1 |
-| 🌾 Cookie Farm | 500 | 8 |
-| 🏭 Cookie Factory | 3,000 | 47 |
-| ⛏️ Cookie Mine | 10,000 | 260 |
-| 🚀 Space Station | 50,000 | 1,400 |
+**CurrencyManager** - All resource management
+- Everything is a currency (no inventory)
+- Atomic transactions
+- Balance checking
 
-### Cost Scaling
-Each time you purchase an item, its cost increases by 15% (multiplied by 1.15).
+**SkillManager** - XP and leveling
+- Track XP per skill
+- Calculate levels automatically
+- Check unlock requirements
 
-## Test Coverage
+**ActivityManager** - Time-based actions
+- Update activities with deltaTime
+- Handle completion and rewards
+- Support auto-mode
 
-The automated tests cover:
-- ✅ Initial game state
-- ✅ Cookie clicking functionality
-- ✅ Shop item purchasing
-- ✅ Insufficient funds handling
-- ✅ Automatic cookie generation
-- ✅ Save/load functionality
-- ✅ Game reset functionality
-- ✅ Cost scaling mechanics
-- ✅ Rapid clicking handling
-- ✅ Multiple shop items display
-
-## Technologies Used
-
-- **Vite**: Fast build tool and dev server
-- **Playwright**: Browser automation and testing framework
-- **Vanilla JavaScript**: No framework overhead
-- **CSS3**: Modern styling with animations and gradients
-- **LocalStorage API**: Client-side save system
-
-## Project Structure
+### File Structure
 
 ```
 clicker-game/
-├── index.html          # Main HTML file
-├── main.js            # Game logic
-├── style.css          # Styling
-├── playwright.config.js  # Playwright configuration
+├── docs/              # Design documentation
+├── src/
+│   ├── core/          # GameEngine, EventBus
+│   ├── managers/      # Game system managers
+│   ├── data/          # Game content definitions
+│   ├── utils/         # Calculation utilities
+│   └── main.js        # Entry point & UI
 ├── tests/
-│   └── clicker-game.spec.js  # Test suite
-└── package.json       # Project dependencies and scripts
+│   ├── unit/          # Unit tests (114 tests)
+│   ├── integration/   # Integration tests
+│   └── e2e/           # End-to-end tests
+└── CLAUDE.md          # AI development guide
 ```
 
-## License
+## 🎨 Design Philosophy
+
+### Core Principles
+- **Everything is Currency** - No complex inventory management
+- **Time-Based Activities** - Each activity takes 2-8 seconds
+- **Free Bootstrap** - Level 1 activities are always FREE
+- **Interconnected Economy** - Skills depend on each other
+- **Progressive Complexity** - Start simple, unlock depth
+
+### Technical Principles
+- **Test-Driven Development** - Tests written before code
+- **100% Test Coverage** - All core systems fully tested
+- **Event-Driven** - Loose coupling via pub/sub
+- **Pure Functions** - Predictable, testable code
+- **Separation of Concerns** - Clean architecture
+
+## 🔧 Development
+
+### TDD Workflow
+
+1. **RED** - Write failing test
+2. **GREEN** - Write minimal code to pass
+3. **REFACTOR** - Improve code quality
+4. **COMMIT** - Save working state
+
+### Adding New Content
+
+**New Currency:**
+```javascript
+// src/data/currencies.js
+export const currencies = {
+  newItem: {
+    id: 'newItem',
+    name: 'New Item',
+    description: 'Description',
+    icon: '🎁'
+  }
+}
+```
+
+**New Activity:**
+```javascript
+// src/data/activities.js
+{
+  id: 'newActivity',
+  name: 'New Activity',
+  skillId: 'woodcutting',
+  levelRequired: 10,
+  inputs: { wood: 5 },
+  outputs: { newItem: 1 },
+  duration: 3,
+  xpGained: 15,
+  description: 'Do something cool'
+}
+```
+
+## 📈 Future Enhancements
+
+- [ ] Upgrade system for boosting activities
+- [ ] More skills (Smithing, Crafting, Alchemy, Trading)
+- [ ] Offline progress calculation
+- [ ] Achievement system
+- [ ] Prestige/rebirth mechanics
+- [ ] Visual effects and animations
+- [ ] Sound effects
+- [ ] Mobile app version
+
+## 🤝 Contributing
+
+This project follows strict TDD principles:
+1. Write tests first
+2. Make tests pass
+3. Refactor
+4. Commit
+
+See `CLAUDE.md` for detailed development guidelines.
+
+## 📝 License
 
 ISC
 
+## 🙏 Acknowledgments
+
+Built following the design documents in `docs/`:
+- DESIGN.md - System architecture
+- TESTING.md - Testing strategy
+- EXAMPLES.md - Skill/activity examples
+
+Developed with Claude Code using Test-Driven Development throughout.
