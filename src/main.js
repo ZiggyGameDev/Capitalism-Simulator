@@ -86,6 +86,30 @@ function renderSkillList() {
   })
 }
 
+// Get effective duration display with worker speed
+function getEffectiveDurationDisplay(activityId) {
+  const activity = activities.find(a => a.id === activityId)
+  if (!activity) return '0s'
+
+  const effectiveDuration = game.activityManager.getEffectiveDuration(activityId)
+
+  // If infinite (no workers), show base duration with note
+  if (!isFinite(effectiveDuration)) {
+    return `${activity.duration}s ⏸️ (needs workers)`
+  }
+
+  // Format the duration nicely
+  const roundedDuration = Math.round(effectiveDuration * 10) / 10
+
+  // Show comparison to base if different
+  if (Math.abs(effectiveDuration - activity.duration) > 0.1) {
+    const speedPercent = Math.round((activity.duration / effectiveDuration) * 100)
+    return `${roundedDuration}s ⚡${speedPercent}%`
+  }
+
+  return `${roundedDuration}s`
+}
+
 // Set up event delegation for worker buttons (only once)
 let workerButtonDelegationSetup = false
 function setupWorkerButtonDelegation() {
@@ -272,7 +296,7 @@ function renderActivityList(skillId) {
       </div>
       ${isHalted ? '<div class="activity-halted-warning">⚠️ Production halted - insufficient resources</div>' : ''}
       <div class="activity-meta">
-        ${activity.duration}s | +${activity.xpGained} XP
+        ${getEffectiveDurationDisplay(activity.id)} | +${activity.xpGained} XP
       </div>
       ${isRunning ? `
         <div class="activity-progress-bar">
@@ -321,10 +345,19 @@ function renderActiveActivities() {
     const activity = activities.find(a => a.id === state.activityId)
     const progress = game.activityManager.getProgress(state.activityId)
 
+    // Show outputs with emojis
+    const outputsText = Object.entries(activity.outputs).map(([id, amt]) => {
+      const currency = currencies[id]
+      return `${currency.icon}×${amt}`
+    }).join(' ')
+
     const div = document.createElement('div')
     div.className = 'active-activity-item'
     div.innerHTML = `
-      <div class="active-activity-name">🤖 ${activity.name}</div>
+      <div class="active-activity-name">
+        🤖 ${activity.name}
+        <span class="active-activity-outputs">${outputsText}</span>
+      </div>
       <div class="active-activity-progress-bar">
         <div class="active-activity-progress-fill" style="width: ${progress * 100}%"></div>
       </div>
