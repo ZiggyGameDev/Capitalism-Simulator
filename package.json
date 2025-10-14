@@ -7,15 +7,28 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
+    "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:unit": "vitest run --dir tests/unit",
+    "test:integration": "vitest run --dir tests/integration",
+    "test:e2e": "playwright test",
+    "test:watch": "vitest --dir tests/unit",
+    "test:coverage": "vitest run --coverage --dir tests/unit",
+    "test:ui": "vitest --ui",
+    "test:playwright:ui": "playwright test --ui",
     "test:headed": "playwright test --headed"
   },
-  "keywords": ["clicker", "game", "cookie"],
+  "keywords": [
+    "clicker",
+    "game",
+    "cookie"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.56.0",
-    "vite": "^7.1.9"
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^20.0.0",
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4"
   }
 }
