@@ -25,15 +25,6 @@ const activeActivityElements = new Map() // activityId -> { root, progressFill, 
 // Town renderer
 let townRenderer = null
 
-// Status bar elements
-const statusElements = {
-  roundCounter: null,
-  phaseIndicator: null,
-  timerDisplay: null,
-  scoreDisplay: null,
-  timerProgress: null
-}
-
 // State
 let selectedSkill = 'farming'  // First skill in expanded content
 let lastUnlockState = new Map() // Track which activities are unlocked to detect changes
@@ -49,13 +40,6 @@ function init() {
   cleanupGameListeners()
 
   setupEventListeners()
-
-  // Cache status bar elements
-  statusElements.roundCounter = document.getElementById('roundCounter')
-  statusElements.phaseIndicator = document.getElementById('phaseIndicator')
-  statusElements.timerDisplay = document.getElementById('timerDisplay')
-  statusElements.scoreDisplay = document.getElementById('scoreDisplay')
-  statusElements.timerProgress = document.getElementById('timerProgress')
 
   // Give new players 1 basic worker to start
   if (!localStorage.getItem('incrementalGameSave')) {
@@ -91,9 +75,6 @@ function init() {
   game.on('upgrade:purchased', handleUpgradePurchased)
   game.on('worker:assigned', handleWorkerChanged)
   game.on('worker:unassigned', handleWorkerChanged)
-  game.on('round:phase_changed', handlePhaseChanged)
-  game.on('game:fastForward', handleFastForward)
-  game.on('round:game_ended', handleGameEnded)
   game.on('building:construction_started', handleBuildingEvent)
   game.on('building:construction_complete', handleBuildingEvent)
   game.on('building:worker_generated', handleBuildingEvent)
@@ -140,9 +121,6 @@ function cleanupGameListeners() {
   game.off('upgrade:purchased', handleUpgradePurchased)
   game.off('worker:assigned', handleWorkerChanged)
   game.off('worker:unassigned', handleWorkerChanged)
-  game.off('round:phase_changed', handlePhaseChanged)
-  game.off('game:fastForward', handleFastForward)
-  game.off('round:game_ended', handleGameEnded)
   game.off('building:construction_started', handleBuildingEvent)
   game.off('building:construction_complete', handleBuildingEvent)
   game.off('building:worker_generated', handleBuildingEvent)
@@ -167,22 +145,6 @@ function setupEventListeners() {
       switchTab(tab)
     })
   })
-
-  // Continue button
-  const continueBtn = document.getElementById('continueBtn')
-  if (continueBtn) {
-    continueBtn.addEventListener('click', () => {
-      game.endBuildingPhase()
-    })
-  }
-
-  // Fast-forward button
-  const fastForwardBtn = document.getElementById('fastForwardBtn')
-  if (fastForwardBtn) {
-    fastForwardBtn.addEventListener('click', () => {
-      game.fastForwardRound()
-    })
-  }
 
   // Back to activities button
   const backToActivitiesBtn = document.getElementById('backToActivitiesBtn')
@@ -998,47 +960,8 @@ function handleResourceChanged(data) {
 }
 
 function handleGameTick(data) {
-  // Update status bar with live round/timer/score information
-  const phaseInfo = game.roundManager.getPhaseInfo()
-
-  // Update round counter
-  if (statusElements.roundCounter) {
-    statusElements.roundCounter.textContent = `${phaseInfo.round} / ${phaseInfo.totalRounds}`
-  }
-
-  // Update phase indicator with appropriate styling
-  if (statusElements.phaseIndicator) {
-    const phaseText = phaseInfo.phase === 'collection' ? 'Collection' :
-                      phaseInfo.phase === 'building' ? 'Building' : 'Ended'
-    statusElements.phaseIndicator.textContent = phaseText
-    statusElements.phaseIndicator.className = `status-value phase-${phaseInfo.phase}`
-  }
-
-  // Update timer display
-  if (statusElements.timerDisplay) {
-    statusElements.timerDisplay.textContent = game.roundManager.getFormattedTime()
-  }
-
-  // Update timer progress bar
-  if (statusElements.timerProgress) {
-    const percent = phaseInfo.phase === 'collection'
-      ? (phaseInfo.timeRemaining / game.roundManager.COLLECTION_PHASE_DURATION) * 100
-      : 0
-    statusElements.timerProgress.style.width = `${Math.max(0, percent)}%`
-
-    // Add warning class when time is running out
-    if (percent < 20 && percent > 0) {
-      statusElements.timerProgress.classList.add('warning')
-    } else {
-      statusElements.timerProgress.classList.remove('warning')
-    }
-  }
-
-  // Update score display
-  if (statusElements.scoreDisplay) {
-    const score = game.calculateCurrentScore()
-    statusElements.scoreDisplay.textContent = score
-  }
+  // Game tick event - currently no UI updates needed for continuous gameplay
+  // Activity simulations update via their own render loop
 }
 
 function handleWorkerChanged(data) {
@@ -1066,80 +989,6 @@ function handleOfflineProgress(data) {
 function handleUpgradePurchased(data) {
   buildUpgradeList()
   showNotification(`✨ Purchased: ${data.upgrade.name}!`)
-}
-
-function handlePhaseChanged(data) {
-  const { phase, round } = data
-  const continueBtn = document.getElementById('continueBtn')
-  const fastForwardBtn = document.getElementById('fastForwardBtn')
-
-  if (phase === 'building') {
-    // Switch to city tab when entering building phase
-    switchTab('city')
-    showNotification(`Round ${round} complete! Time to build your city!`)
-
-    // Show continue button, hide fast-forward
-    if (continueBtn) {
-      continueBtn.classList.remove('hidden')
-    }
-    if (fastForwardBtn) {
-      fastForwardBtn.classList.add('hidden')
-    }
-
-    // Disable worker controls during building phase
-    disableWorkerControls()
-  } else if (phase === 'collection') {
-    // Switch back to activities tab when entering collection phase
-    switchTab('activities')
-    showNotification(`Round ${round} started! Gather resources!`)
-
-    // Hide continue button, show fast-forward
-    if (continueBtn) {
-      continueBtn.classList.add('hidden')
-    }
-    if (fastForwardBtn) {
-      fastForwardBtn.classList.remove('hidden')
-    }
-
-    // Enable worker controls during collection phase
-    enableWorkerControls()
-  }
-}
-
-function handleFastForward(data) {
-  const timeInSeconds = Math.floor(data.timeSkipped / 1000)
-  const resourceCount = Object.keys(data.resourcesEarned || {}).length
-  const activitiesCount = data.activitiesCompleted.reduce((sum, a) => sum + a.completions, 0)
-
-  showNotification(`⏩ Fast-forwarded ${timeInSeconds}s! ${activitiesCount} activities completed, ${resourceCount} resources earned!`)
-}
-
-/**
- * Disable worker control buttons during building phase
- */
-function disableWorkerControls() {
-  document.querySelectorAll('.worker-btn-plus, .worker-btn-minus, .worker-btn-remove-all').forEach(btn => {
-    btn.disabled = true
-    btn.style.opacity = '0.5'
-    btn.style.cursor = 'not-allowed'
-  })
-}
-
-/**
- * Enable worker control buttons during collection phase
- */
-function enableWorkerControls() {
-  document.querySelectorAll('.worker-btn-plus, .worker-btn-minus, .worker-btn-remove-all').forEach(btn => {
-    // Only enable if button shouldn't be disabled for other reasons
-    // Re-run update logic to determine proper disabled state
-    btn.style.opacity = ''
-    btn.style.cursor = ''
-  })
-
-  // Re-update all activity states to restore proper disabled states
-  activityElements.forEach((_, activityId) => {
-    updateActivityState(activityId)
-  })
 }
 
 function handleBuildingEvent(data) {
@@ -1249,58 +1098,7 @@ function loadGame() {
   }
 }
 
-function handleGameEnded(data) {
-  const { finalScore } = data
-
-  // Calculate statistics
-  const workerCount = game.resourceManager.get('basicWorker') || 0
-  const buildingCount = game.buildingManager.getTotalBuildingCount()
-  const buildingPoints = buildingCount * 10
-
-  // Get all resources
-  const allResources = game.resourceManager.getAll()
-
-  // Show modal
-  const modal = document.getElementById('endGameModal')
-  if (!modal) return
-
-  // Update score
-  document.getElementById('finalScoreValue').textContent = finalScore
-
-  // Update breakdown
-  document.getElementById('finalWorkers').textContent = workerCount
-  document.getElementById('finalBuildings').textContent = buildingCount
-  document.getElementById('finalBuildingPoints').textContent = buildingPoints
-
-  // Update resources
-  const finalResourcesContainer = document.getElementById('finalResources')
-  finalResourcesContainer.innerHTML = ''
-
-  Object.entries(allResources).forEach(([resourceId, amount]) => {
-    if (amount > 0 && resources[resourceId]) {
-      const resource = resources[resourceId]
-      const div = document.createElement('div')
-      div.className = 'resource-stat'
-      div.innerHTML = `
-        <div class="resource-stat-icon">${resource.icon}</div>
-        <div class="resource-stat-name">${resource.name}</div>
-        <div class="resource-stat-value">${Math.floor(amount)}</div>
-      `
-      finalResourcesContainer.appendChild(div)
-    }
-  })
-
-  // Show modal
-  modal.classList.remove('hidden')
-}
-
 function restartGame() {
-  // Close modal
-  const modal = document.getElementById('endGameModal')
-  if (modal) {
-    modal.classList.add('hidden')
-  }
-
   // Reset game
   game.reset()
   localStorage.removeItem('incrementalGameSave')
