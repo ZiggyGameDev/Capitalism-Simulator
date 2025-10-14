@@ -325,13 +325,19 @@ function handleSkillLevelup(data) {
   showNotification(`🎉 ${data.skillId.toUpperCase()} reached level ${data.newLevel}!`)
 }
 
+let lastTickRender = 0
 function handleGameTick(data) {
   // Update progress bars
   const active = game.activityManager.getActiveActivities()
   if (active.length > 0) {
     renderActiveActivities()
-    // Update the currently selected skill's activity list to show progress
-    renderActivityList(selectedSkill)
+
+    // Only re-render activity list occasionally (every 500ms) to show progress
+    const now = Date.now()
+    if (now - lastTickRender > 500) {
+      lastTickRender = now
+      renderActivityList(selectedSkill)
+    }
   }
 }
 
@@ -460,15 +466,18 @@ function renderWorkerPanel() {
 }
 
 function handleWorkerChanged() {
-  // Debounce the re-render to avoid UI flickering during rapid clicks
+  // Only update the worker panel, not the entire activity list
+  // The activity list buttons already update their counts immediately
+  renderWorkerPanel()
+
+  // Schedule a full re-render after a delay to update automation status and "Remove All" button
   if (handleWorkerChanged.timeout) {
     clearTimeout(handleWorkerChanged.timeout)
   }
 
   handleWorkerChanged.timeout = setTimeout(() => {
-    renderWorkerPanel()
-    renderActivityList(selectedSkill)  // Update to show automated activities
-  }, 50)  // Short delay to batch rapid clicks
+    renderActivityList(selectedSkill)  // Full re-render to update automation indicators
+  }, 200)  // Longer delay - only re-render when user is done clicking
 }
 
 function showNotification(message) {
