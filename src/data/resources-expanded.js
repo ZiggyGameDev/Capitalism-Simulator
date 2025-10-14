@@ -13,6 +13,7 @@ export const resources = {
   wood: { id: 'wood', name: 'Wood', icon: '🪵', description: 'Chopped by hand' },
   stone: { id: 'stone', name: 'Stone', icon: '🪨', description: 'Gathered manually' },
   water: { id: 'water', name: 'Water', icon: '💧', description: 'Carried in buckets' },
+  gold: { id: 'gold', name: 'Gold', icon: '🪙', description: 'Precious metal' },
 
   // Simple tools
   stoneTools: { id: 'stoneTools', name: 'Stone Tools', icon: '🪓', description: 'Primitive implements' },
