@@ -14,10 +14,10 @@ describe('Worker Simulation Integration', () => {
   describe('Full Harvest Cycle', () => {
     it('should spawn workers when player gains worker currency', () => {
       // Give player 2 basic workers
-      engine.currencyManager.add('basicWorker', 2)
+      engine.resourceManager.add('basicWorker', 2)
 
       // Sync workers (should spawn 2 worker entities)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       expect(engine.workerEntityManager.getTotalWorkerCount()).toBe(2)
       expect(engine.workerEntityManager.getWorkersByType('basicWorker').length).toBe(2)
@@ -25,8 +25,8 @@ describe('Worker Simulation Integration', () => {
 
     it('should allow assigning workers to resource nodes', () => {
       // Give player 1 basic worker
-      engine.currencyManager.add('basicWorker', 1)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.resourceManager.add('basicWorker', 1)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       // Get first worker
       const workers = engine.workerEntityManager.getAllWorkers()
@@ -52,9 +52,9 @@ describe('Worker Simulation Integration', () => {
 
     it('should complete full worker harvest cycle', () => {
       // Setup: Give player workers and level up farming
-      engine.currencyManager.add('basicWorker', 1)
+      engine.resourceManager.add('basicWorker', 1)
       engine.skillManager.setXP('farming', 100) // Level 1+
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       // Get worker
       const workers = engine.workerEntityManager.getAllWorkers()
@@ -67,7 +67,7 @@ describe('Worker Simulation Integration', () => {
       node.available = 10
 
       // Track initial wheat in inventory
-      const initialWheat = engine.currencyManager.get('wheat') || 0
+      const initialWheat = engine.resourceManager.get('wheat') || 0
 
       // Assign worker to wheat field
       engine.workerEntityManager.assignWorker(worker.id, 'wheat_field_1')
@@ -101,15 +101,15 @@ describe('Worker Simulation Integration', () => {
       // Worker should be back to idle and wheat should be in inventory
       expect(worker.state).toBe('idle')
       expect(worker.carrying).toBeNull()
-      expect(engine.currencyManager.get('wheat')).toBe(initialWheat + 1)
+      expect(engine.resourceManager.get('wheat')).toBe(initialWheat + 1)
       expect(worker.totalHarvests).toBe(1)
     })
 
     it('should handle multiple workers harvesting simultaneously', () => {
       // Setup: 3 workers, level 1 farming
-      engine.currencyManager.add('basicWorker', 3)
+      engine.resourceManager.add('basicWorker', 3)
       engine.skillManager.setXP('farming', 100)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       const workers = engine.workerEntityManager.getAllWorkers()
       const node = engine.resourceNodeManager.getNode('wheat_field_1')
@@ -133,10 +133,10 @@ describe('Worker Simulation Integration', () => {
 
     it('should respect worker speed differences', () => {
       // Give player different worker types
-      engine.currencyManager.add('basicWorker', 1)
-      engine.currencyManager.add('tractorWorker', 1)
-      engine.currencyManager.add('droneWorker', 1)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.resourceManager.add('basicWorker', 1)
+      engine.resourceManager.add('tractorWorker', 1)
+      engine.resourceManager.add('droneWorker', 1)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       const basic = engine.workerEntityManager.getWorkersByType('basicWorker')[0]
       const tractor = engine.workerEntityManager.getWorkersByType('tractorWorker')[0]
@@ -155,13 +155,13 @@ describe('Worker Simulation Integration', () => {
 
     it('should handle worker despawning when currency decreases', () => {
       // Give player 3 workers
-      engine.currencyManager.add('basicWorker', 3)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.resourceManager.add('basicWorker', 3)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
       expect(engine.workerEntityManager.getTotalWorkerCount()).toBe(3)
 
       // Remove 1 worker currency
-      engine.currencyManager.set('basicWorker', 2)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.resourceManager.set('basicWorker', 2)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       // Should despawn 1 worker
       expect(engine.workerEntityManager.getTotalWorkerCount()).toBe(2)
@@ -169,10 +169,10 @@ describe('Worker Simulation Integration', () => {
 
     it('should save and load worker simulation state', () => {
       // Setup simulation
-      engine.currencyManager.add('basicWorker', 2)
-      engine.currencyManager.add('wheat', 10)
+      engine.resourceManager.add('basicWorker', 2)
+      engine.resourceManager.add('wheat', 10)
       engine.skillManager.setXP('farming', 200)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       const workers = engine.workerEntityManager.getAllWorkers()
       engine.workerEntityManager.assignWorker(workers[0].id, 'wheat_field_1')
@@ -194,8 +194,8 @@ describe('Worker Simulation Integration', () => {
       newEngine.loadState(state)
 
       // Verify currencies
-      expect(newEngine.currencyManager.get('basicWorker')).toBe(2)
-      expect(newEngine.currencyManager.get('wheat')).toBe(10)
+      expect(newEngine.resourceManager.get('basicWorker')).toBe(2)
+      expect(newEngine.resourceManager.get('wheat')).toBe(10)
 
       // Verify resource node state
       const loadedNode = newEngine.resourceNodeManager.getNode('wheat_field_1')
@@ -264,8 +264,8 @@ describe('Worker Simulation Integration', () => {
   describe('Game Loop Integration', () => {
     it('should update all systems in game loop', () => {
       // Setup
-      engine.currencyManager.add('basicWorker', 1)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.resourceManager.add('basicWorker', 1)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       const worker = engine.workerEntityManager.getAllWorkers()[0]
       const node = engine.resourceNodeManager.getNode('wheat_field_1')
@@ -295,8 +295,8 @@ describe('Worker Simulation Integration', () => {
 
   describe('Random Offset System', () => {
     it('should have random offsets to prevent stacking', () => {
-      engine.currencyManager.add('basicWorker', 3)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.resourceManager.add('basicWorker', 3)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       const workers = engine.workerEntityManager.getAllWorkers()
 
@@ -313,8 +313,8 @@ describe('Worker Simulation Integration', () => {
     })
 
     it('should regenerate random offset after each deposit', () => {
-      engine.currencyManager.add('basicWorker', 1)
-      engine.workerEntityManager.syncWithCurrency(engine.currencyManager)
+      engine.resourceManager.add('basicWorker', 1)
+      engine.workerEntityManager.syncWithCurrency(engine.resourceManager)
 
       const worker = engine.workerEntityManager.getAllWorkers()[0]
       const originalOffset = worker.randomOffset

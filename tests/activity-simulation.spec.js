@@ -34,7 +34,7 @@ test.describe('Activity Simulation - Visual Worker System', () => {
   test('should show workers in simulation when assigned', async ({ page }) => {
     // Give player workers
     await page.evaluate(() => {
-      window.game.currencyManager.add('basicWorker', 3)
+      window.game.resourceManager.add('basicWorker', 3)
     })
 
     await page.waitForTimeout(200)
@@ -69,7 +69,7 @@ test.describe('Activity Simulation - Visual Worker System', () => {
   test('should show workers moving in simulation', async ({ page }) => {
     // Setup: Give workers and assign them
     await page.evaluate(() => {
-      window.game.currencyManager.add('basicWorker', 2)
+      window.game.resourceManager.add('basicWorker', 2)
     })
 
     await page.waitForTimeout(200)
@@ -92,7 +92,7 @@ test.describe('Activity Simulation - Visual Worker System', () => {
   test('should sync workers with assignments', async ({ page }) => {
     // Give player multiple workers
     await page.evaluate(() => {
-      window.game.currencyManager.add('basicWorker', 5)
+      window.game.resourceManager.add('basicWorker', 5)
     })
 
     await page.waitForTimeout(200)
@@ -119,7 +119,7 @@ test.describe('Activity Simulation - Visual Worker System', () => {
   test('should remove workers when unassigned', async ({ page }) => {
     // Setup: Give workers and assign them
     await page.evaluate(() => {
-      window.game.currencyManager.add('basicWorker', 3)
+      window.game.resourceManager.add('basicWorker', 3)
     })
 
     await page.waitForTimeout(200)
@@ -149,7 +149,7 @@ test.describe('Activity Simulation - Visual Worker System', () => {
   test('should have workers with pre-calculated cycle times', async ({ page }) => {
     // Give workers and assign
     await page.evaluate(() => {
-      window.game.currencyManager.add('basicWorker', 1)
+      window.game.resourceManager.add('basicWorker', 1)
     })
 
     await page.waitForTimeout(200)
@@ -181,7 +181,7 @@ test.describe('Activity Simulation - Visual Worker System', () => {
   test('should have workers with random offsets', async ({ page }) => {
     // Give workers and assign multiple
     await page.evaluate(() => {
-      window.game.currencyManager.add('basicWorker', 3)
+      window.game.resourceManager.add('basicWorker', 3)
     })
 
     await page.waitForTimeout(200)

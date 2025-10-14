@@ -28,8 +28,8 @@ describe('UI Widget Visibility - Currency Ticker', () => {
     const { GameEngine } = await import('../../src/core/GameEngine.js')
     const { skills } = await import('../../src/data/skills-expanded.js')
     const { activities } = await import('../../src/data/activities-expanded.js')
-    const currenciesModule = await import('../../src/data/currencies-expanded.js')
-    currencies = currenciesModule.currencies
+    const resourcesModule = await import('../../src/data/resources-expanded.js')
+    currencies = resourcesModule.resources
 
     game = new GameEngine(skills, activities)
   })
@@ -48,7 +48,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       const container = document.getElementById('currencyTicker')
 
       // Simulate earning wheat
-      game.currencyManager.add('wheat', 5)
+      game.resourceManager.add('wheat', 5)
 
       // Manually create the element (simulating UI update)
       const currency = currencies.wheat
@@ -69,15 +69,15 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       const container = document.getElementById('currencyTicker')
 
       // Earn multiple currencies
-      game.currencyManager.add('wheat', 10)
-      game.currencyManager.add('wood', 5)
-      game.currencyManager.add('stone', 3)
+      game.resourceManager.add('wheat', 10)
+      game.resourceManager.add('wood', 5)
+      game.resourceManager.add('stone', 3)
 
       // Create elements for all
       const currencyIds = ['wheat', 'wood', 'stone']
       currencyIds.forEach(id => {
         const currency = currencies[id]
-        const amount = game.currencyManager.get(id)
+        const amount = game.resourceManager.get(id)
         const div = document.createElement('div')
         div.className = 'currency-item'
         div.dataset.currencyId = id
@@ -96,7 +96,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       const container = document.getElementById('currencyTicker')
 
       // Add currency
-      game.currencyManager.add('wheat', 10)
+      game.resourceManager.add('wheat', 10)
       const div = document.createElement('div')
       div.className = 'currency-item'
       div.dataset.currencyId = 'wheat'
@@ -106,11 +106,11 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       expect(container.querySelector('[data-currency-id="wheat"]')).toBeTruthy()
 
       // Spend all
-      game.currencyManager.subtract('wheat', 10)
+      game.resourceManager.subtract('wheat', 10)
 
       // Simulate removal
       const element = container.querySelector('[data-currency-id="wheat"]')
-      if (game.currencyManager.get('wheat') === 0) {
+      if (game.resourceManager.get('wheat') === 0) {
         element.remove()
       }
 
@@ -120,7 +120,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
     it('should update currency amount when it changes', () => {
       const container = document.getElementById('currencyTicker')
 
-      game.currencyManager.add('wheat', 10)
+      game.resourceManager.add('wheat', 10)
       const div = document.createElement('div')
       div.className = 'currency-item'
       div.dataset.currencyId = 'wheat'
@@ -131,8 +131,8 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       expect(amountSpan.textContent).toBe('10')
 
       // Add more
-      game.currencyManager.add('wheat', 5)
-      amountSpan.textContent = game.currencyManager.get('wheat').toString()
+      game.resourceManager.add('wheat', 5)
+      amountSpan.textContent = game.resourceManager.get('wheat').toString()
 
       expect(amountSpan.textContent).toBe('15')
     })
@@ -145,7 +145,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
 
       // Add all currencies
       allCurrencyIds.forEach((id, index) => {
-        game.currencyManager.add(id, index + 1)
+        game.resourceManager.add(id, index + 1)
 
         const currency = currencies[id]
         expect(currency).toBeDefined()
@@ -170,7 +170,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       expect(container.querySelector('.currency-item:not([data-currency-id])')).toBeTruthy()
 
       // Add first currency
-      game.currencyManager.add('wheat', 5)
+      game.resourceManager.add('wheat', 5)
 
       // Remove placeholder
       const placeholder = container.querySelector('.currency-item:not([data-currency-id])')
@@ -193,13 +193,13 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       const container = document.getElementById('currencyTicker')
 
       // Add and then remove currency
-      game.currencyManager.add('wheat', 5)
+      game.resourceManager.add('wheat', 5)
       const div = document.createElement('div')
       div.className = 'currency-item'
       div.dataset.currencyId = 'wheat'
       container.appendChild(div)
 
-      game.currencyManager.subtract('wheat', 5)
+      game.resourceManager.subtract('wheat', 5)
       div.remove()
 
       // Check if no currencies left
@@ -215,7 +215,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
     it('should have correct data-currency-id attribute', () => {
       const container = document.getElementById('currencyTicker')
 
-      game.currencyManager.add('wheat', 10)
+      game.resourceManager.add('wheat', 10)
       const div = document.createElement('div')
       div.className = 'currency-item'
       div.dataset.currencyId = 'wheat'
@@ -228,7 +228,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
     it('should have currency-item class', () => {
       const container = document.getElementById('currencyTicker')
 
-      game.currencyManager.add('wheat', 10)
+      game.resourceManager.add('wheat', 10)
       const div = document.createElement('div')
       div.className = 'currency-item'
       div.dataset.currencyId = 'wheat'
@@ -256,7 +256,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
     it('should handle fractional currency amounts by flooring', () => {
       const container = document.getElementById('currencyTicker')
 
-      game.currencyManager.add('wheat', 10.7)
+      game.resourceManager.add('wheat', 10.7)
       const div = document.createElement('div')
       div.className = 'currency-item'
       div.dataset.currencyId = 'wheat'
@@ -287,7 +287,7 @@ describe('UI Widget Visibility - Currency Ticker', () => {
     it('should handle rapid currency changes', () => {
       const container = document.getElementById('currencyTicker')
 
-      game.currencyManager.add('wheat', 1)
+      game.resourceManager.add('wheat', 1)
       const div = document.createElement('div')
       div.className = 'currency-item'
       div.dataset.currencyId = 'wheat'
@@ -298,12 +298,12 @@ describe('UI Widget Visibility - Currency Ticker', () => {
 
       // Rapid changes
       for (let i = 2; i <= 100; i++) {
-        game.currencyManager.set('wheat', i)
+        game.resourceManager.set('wheat', i)
         amountSpan.textContent = i.toString()
       }
 
       expect(amountSpan.textContent).toBe('100')
-      expect(game.currencyManager.get('wheat')).toBe(100)
+      expect(game.resourceManager.get('wheat')).toBe(100)
     })
   })
 })
