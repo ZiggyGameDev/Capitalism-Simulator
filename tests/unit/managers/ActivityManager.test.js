@@ -111,10 +111,17 @@ describe('ActivityManager', () => {
       })
     })
 
-    it('should allow multiple different activities', () => {
+    it('should stop previous activity when starting new one (only one manual activity)', () => {
+      const stopSpy = vi.fn()
+      eventBus.on('activity:stopped', stopSpy)
+
       am.start('chopTree')
+      expect(am.getActiveActivities()).toHaveLength(1)
+
       am.start('fishShrimp')
-      expect(am.getActiveActivities()).toHaveLength(2)
+      expect(am.getActiveActivities()).toHaveLength(1)
+      expect(am.getActiveActivities()[0].activityId).toBe('fishShrimp')
+      expect(stopSpy).toHaveBeenCalledOnce()  // chopTree was stopped
     })
   })
 
@@ -174,14 +181,17 @@ describe('ActivityManager', () => {
       expect(am.getActiveActivities()).toHaveLength(0)
     })
 
-    it('should handle multiple activities updating', () => {
+    it('should switch between activities (only one manual at a time)', () => {
       am.start('chopTree')
-      am.start('fishShrimp')
-      am.update(2000)
+      am.update(1000)  // Halfway through chopTree
 
-      // ChopTree completes (2s), fishShrimp at 2/3 progress
-      expect(cm.get('wood')).toBe(1)
-      expect(cm.get('shrimp')).toBe(0)  // Not done yet
+      // Start fishShrimp - stops chopTree
+      am.start('fishShrimp')
+      am.update(2000)  // 2/3 through fishShrimp (3s duration)
+
+      // ChopTree never completed (was stopped)
+      expect(cm.get('wood')).toBe(0)
+      expect(cm.get('shrimp')).toBe(0)  // FishShrimp not done yet
       expect(am.getProgress('fishShrimp')).toBeCloseTo(0.666, 2)
     })
 
@@ -284,13 +294,13 @@ describe('ActivityManager', () => {
       expect(am.getActiveActivities()).toEqual([])
     })
 
-    it('should return array of active activities', () => {
+    it('should return array with single activity (only one manual at a time)', () => {
       am.start('chopTree')
-      am.start('fishShrimp')
+      am.start('fishShrimp')  // Stops chopTree
 
       const active = am.getActiveActivities()
-      expect(active).toHaveLength(2)
-      expect(active[0]).toHaveProperty('activityId')
+      expect(active).toHaveLength(1)  // Only fishShrimp running
+      expect(active[0].activityId).toBe('fishShrimp')
       expect(active[0]).toHaveProperty('progress')
       expect(active[0]).toHaveProperty('startTime')
     })
@@ -341,12 +351,14 @@ describe('ActivityManager', () => {
         expect(duration).toBe(2)  // Base duration
       })
 
-      it('should double duration when workers assigned (half speed)', () => {
+      it('should increase duration with workers (logarithmic scaling)', () => {
         workerManager.addWorkers(5)
         workerManager.assign('chopTree', 3)
 
         const duration = am.getEffectiveDuration('chopTree')
-        expect(duration).toBe(4)  // 2 / 0.5 = 4 (twice as long)
+        // 3 workers: speed = 0.2 + 0.5 * log10(3) ≈ 0.44
+        // Duration = 2 / 0.44 ≈ 4.55
+        expect(duration).toBeCloseTo(4.55, 1)
       })
 
       it('should return normal duration when workers unassigned', () => {
@@ -360,18 +372,18 @@ describe('ActivityManager', () => {
     })
 
     describe('Activity completion with workers', () => {
-      it('should take twice as long with workers assigned', () => {
+      it('should take longer with workers (3 workers = ~4.55s)', () => {
         workerManager.addWorkers(5)
         workerManager.assign('chopTree', 3)
 
         am.start('chopTree', { autoMode: false })  // Disable auto-mode for test
-        am.update(2000)  // Normal duration
+        am.update(2000)  // Normal duration would complete, but workers slow it down
 
-        // Should not be complete yet (needs 4 seconds with workers)
+        // Should not be complete yet (needs ~4.55 seconds with 3 workers)
         expect(am.getActiveActivities()).toHaveLength(1)
-        expect(am.getProgress('chopTree')).toBeCloseTo(0.5, 2)
+        expect(am.getProgress('chopTree')).toBeCloseTo(0.44, 1)  // ~44% done
 
-        am.update(2000)  // Another 2 seconds = 4 total
+        am.update(2600)  // Another 2.6 seconds = 4.6 total (a bit extra for rounding)
 
         // Now should be complete
         expect(am.getActiveActivities()).toHaveLength(0)
@@ -382,8 +394,8 @@ describe('ActivityManager', () => {
         workerManager.addWorkers(5)
         workerManager.assign('chopTree', 3)
 
-        am.start('chopTree')
-        am.update(4000)  // Full worker duration
+        am.start('chopTree', { autoMode: false })
+        am.update(4600)  // Full worker duration (~4.55s + a bit extra)
 
         expect(cm.get('wood')).toBe(1)  // Same output
         expect(sm.getXP('woodcutting')).toBe(5)  // Same XP

@@ -155,9 +155,25 @@ describe('WorkerManager', () => {
       expect(workerManager.getSpeedMultiplier('chopNormalTree')).toBe(1)
     })
 
-    it('should return 0.5 (half speed) if workers assigned', () => {
+    it('should return 0.2 (5x slower) with 1 worker', () => {
+      workerManager.assignments['chopNormalTree'] = 1
+      expect(workerManager.getSpeedMultiplier('chopNormalTree')).toBeCloseTo(0.2, 2)
+    })
+
+    it('should return ~0.44 with 3 workers (logarithmic scaling)', () => {
       workerManager.assignments['chopNormalTree'] = 3
-      expect(workerManager.getSpeedMultiplier('chopNormalTree')).toBe(0.5)
+      // Formula: 0.2 + 0.5 * log10(3) ≈ 0.44
+      expect(workerManager.getSpeedMultiplier('chopNormalTree')).toBeCloseTo(0.44, 2)
+    })
+
+    it('should return 0.67 (1.5x slower) with 10 workers', () => {
+      workerManager.assignments['chopNormalTree'] = 10
+      expect(workerManager.getSpeedMultiplier('chopNormalTree')).toBeCloseTo(0.67, 2)
+    })
+
+    it('should cap at 0.67 even with many workers', () => {
+      workerManager.assignments['chopNormalTree'] = 100
+      expect(workerManager.getSpeedMultiplier('chopNormalTree')).toBe(0.67)
     })
   })
 

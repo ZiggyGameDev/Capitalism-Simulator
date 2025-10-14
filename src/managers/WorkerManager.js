@@ -79,10 +79,22 @@ export class WorkerManager {
   }
 
   /**
-   * Get speed multiplier for activity (workers run at half speed)
+   * Get speed multiplier for activity based on number of workers assigned
+   * More workers = faster (but still slower than manual)
+   * 1 worker = 0.2x speed (5x slower than manual)
+   * 10 workers = 0.67x speed (1.5x slower than manual)
+   * Formula: 0.2 + 0.5 * log10(workers), capped at 0.67
    */
   getSpeedMultiplier(activityId) {
-    return this.isAutomated(activityId) ? 0.5 : 1
+    const workerCount = this.assignments[activityId] || 0
+
+    if (workerCount === 0) {
+      return 1  // No workers = normal manual speed
+    }
+
+    // Logarithmic scaling: starts at 0.2 (very slow) and increases to 0.67 (less slow)
+    const speedMultiplier = Math.min(0.67, 0.2 + 0.5 * Math.log10(workerCount))
+    return speedMultiplier
   }
 
   /**

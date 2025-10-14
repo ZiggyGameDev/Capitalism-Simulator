@@ -45,6 +45,15 @@ export class ActivityManager {
       throw new Error(`Cannot start activity: ${activityId}`)
     }
 
+    // Stop all currently running NON-AUTOMATED activities (only one manual activity at a time)
+    for (const [existingId, state] of this.activeActivities.entries()) {
+      // Check if activity is automated by workers
+      const isAutomated = this.workerManager && this.workerManager.isAutomated(existingId)
+      if (!isAutomated) {
+        this.stopActivity(existingId)
+      }
+    }
+
     const activity = this.activityDefinitions.find(a => a.id === activityId)
     const now = Date.now()
 
