@@ -1038,9 +1038,9 @@ function startSimulationRenderLoop() {
       simulation.render(deltaTime)
     })
 
-    // Render town canvas
+    // Render town canvas with animation
     if (townRenderer && currentTab === 'city') {
-      townRenderer.render()
+      townRenderer.render(deltaTime)
     }
 
     // Continue loop

@@ -28,13 +28,18 @@ export class TownRenderer {
     // Worker display area (bottom of canvas)
     this.workerAreaY = this.height - 90
 
+    // Animated workers
+    this.workers = []
+    this.lastWorkerUpdate = 0
+
     console.log('✅ [TownRenderer] Initialized')
   }
 
   /**
    * Render a single frame
+   * @param {number} deltaTime - Time since last frame in milliseconds
    */
-  render() {
+  render(deltaTime = 16) {
     // Clear canvas
     this.ctx.clearRect(0, 0, this.width, this.height)
 
@@ -47,8 +52,9 @@ export class TownRenderer {
     // Draw buildings
     this.drawBuildings()
 
-    // Draw workers
-    this.drawWorkers()
+    // Update and draw animated workers
+    this.updateWorkers(deltaTime)
+    this.drawAnimatedWorkers()
   }
 
   /**
@@ -227,9 +233,161 @@ export class TownRenderer {
   }
 
   /**
-   * Draw workers in the worker area
+   * Update worker entities
    */
-  drawWorkers() {
+  updateWorkers(deltaTime) {
+    const resourceManager = this.engine.resourceManager
+    const workerTypes = [
+      { id: 'basicWorker', icon: '👷', name: 'Workers' },
+      { id: 'lumberjack', icon: '🪓', name: 'Lumberjacks' },
+      { id: 'miner', icon: '⛏️', name: 'Miners' },
+      { id: 'farmer', icon: '🌾', name: 'Farmers' }
+    ]
+
+    // Calculate total workers needed
+    let totalWorkersNeeded = 0
+    workerTypes.forEach(type => {
+      totalWorkersNeeded += resourceManager.get(type.id) || 0
+    })
+
+    // Add or remove workers to match count
+    while (this.workers.length < totalWorkersNeeded) {
+      this.spawnWorker(workerTypes)
+    }
+    while (this.workers.length > totalWorkersNeeded) {
+      this.workers.pop()
+    }
+
+    // Update existing workers
+    this.workers.forEach(worker => {
+      // Update position
+      worker.x += worker.vx * (deltaTime / 16)
+      worker.y += worker.vy * (deltaTime / 16)
+
+      // Bounce off walls
+      const margin = 20
+      if (worker.x < margin || worker.x > this.width - margin) {
+        worker.vx *= -1
+        worker.x = Math.max(margin, Math.min(this.width - margin, worker.x))
+      }
+      if (worker.y < this.workerAreaY + margin || worker.y > this.height - margin) {
+        worker.vy *= -1
+        worker.y = Math.max(this.workerAreaY + margin, Math.min(this.height - margin, worker.y))
+      }
+
+      // Randomly change direction
+      if (Math.random() < 0.01) {
+        const angle = Math.random() * Math.PI * 2
+        const speed = 0.3 + Math.random() * 0.5
+        worker.vx = Math.cos(angle) * speed
+        worker.vy = Math.sin(angle) * speed
+      }
+
+      // Update speech bubble
+      if (worker.speechTimer > 0) {
+        worker.speechTimer -= deltaTime
+      } else if (Math.random() < 0.002) {
+        // Random chance to start talking
+        worker.speechText = this.getRandomSpeech()
+        worker.speechTimer = 2000 + Math.random() * 2000 // 2-4 seconds
+      }
+    })
+  }
+
+  /**
+   * Spawn a new worker
+   */
+  spawnWorker(workerTypes) {
+    // Pick a random worker type from available types
+    const availableTypes = workerTypes.filter(type =>
+      (this.engine.resourceManager.get(type.id) || 0) > 0
+    )
+    const workerType = availableTypes[Math.floor(Math.random() * availableTypes.length)]
+
+    if (!workerType) return
+
+    // Random position in worker area
+    const worker = {
+      x: Math.random() * this.width,
+      y: this.workerAreaY + 30 + Math.random() * 40,
+      vx: (Math.random() - 0.5) * 0.8,
+      vy: (Math.random() - 0.5) * 0.8,
+      icon: workerType.icon,
+      speechText: '',
+      speechTimer: 0
+    }
+
+    this.workers.push(worker)
+  }
+
+  /**
+   * Get random speech text
+   */
+  getRandomSpeech() {
+    const speeches = [
+      '👋', '💬', '☕', '🔨', '📦', '✨',
+      '👍', '💪', '🎯', '⚡', '🔥', '⭐'
+    ]
+    return speeches[Math.floor(Math.random() * speeches.length)]
+  }
+
+  /**
+   * Draw animated workers
+   */
+  drawAnimatedWorkers() {
+    // Draw title
+    this.ctx.font = 'bold 14px Arial'
+    this.ctx.fillStyle = '#000'
+    this.ctx.textAlign = 'left'
+    this.ctx.fillText('👷 Town Workers', 10, this.workerAreaY + 15)
+
+    // Draw each worker
+    this.workers.forEach(worker => {
+      // Draw worker icon
+      this.ctx.font = '28px Arial'
+      this.ctx.textAlign = 'center'
+      this.ctx.textBaseline = 'middle'
+      this.ctx.fillText(worker.icon, worker.x, worker.y)
+
+      // Draw speech bubble if talking
+      if (worker.speechTimer > 0) {
+        // Bubble background
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+        this.ctx.strokeStyle = '#000'
+        this.ctx.lineWidth = 2
+
+        const bubbleWidth = 40
+        const bubbleHeight = 30
+        const bubbleX = worker.x - bubbleWidth / 2
+        const bubbleY = worker.y - 45
+
+        // Draw rounded rectangle
+        this.ctx.beginPath()
+        this.ctx.roundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 8)
+        this.ctx.fill()
+        this.ctx.stroke()
+
+        // Draw speech text
+        this.ctx.font = '20px Arial'
+        this.ctx.fillStyle = '#000'
+        this.ctx.textAlign = 'center'
+        this.ctx.fillText(worker.speechText, worker.x, bubbleY + bubbleHeight / 2)
+      }
+    })
+
+    // If no workers, show message
+    if (this.workers.length === 0) {
+      this.ctx.font = '12px Arial'
+      this.ctx.fillStyle = '#666'
+      this.ctx.textAlign = 'center'
+      this.ctx.fillText('No workers yet - build houses to generate workers!', this.width / 2, this.workerAreaY + 45)
+    }
+  }
+
+  /**
+   * Draw workers in the worker area (DEPRECATED - kept for reference)
+   */
+  drawWorkers_OLD() {
     const resourceManager = this.engine.resourceManager
     const workerTypes = [
       { id: 'basicWorker', icon: '👷', name: 'Workers' },
