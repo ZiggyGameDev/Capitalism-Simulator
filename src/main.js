@@ -15,6 +15,9 @@ let selectedSkill = 'farming'  // First skill in expanded content
 
 // Initialize UI
 function init() {
+  console.log('🎮 [Game] Initializing Automation Idle Game...')
+  console.log('🔧 [Debug] Console logging enabled for worker actions')
+
   setupEventListeners()
   renderSkillList()
   renderActivityList(selectedSkill)
@@ -38,6 +41,7 @@ function init() {
 
   // Start game
   game.start()
+  console.log('✅ [Game] Started successfully')
 
   // Auto-save every 30 seconds
   setInterval(saveGame, 30000)
@@ -201,47 +205,88 @@ function renderActivityList(skillId) {
     const removeAllButton = activityDiv.querySelector('.worker-btn-remove-all')
 
     minusButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
         const activityId = btn.dataset.activity
         const workerTypeId = btn.dataset.worker
         const current = game.workerManager.getAssignment(activityId, workerTypeId)
+
+        console.log(`[Worker] Minus clicked: ${workerTypeId} on ${activityId}, current: ${current}`)
+
         if (current > 0) {
+          const newCount = current - 1
           // Update immediately for instant feedback
           const countSpan = btn.parentElement.querySelector('.worker-count')
           if (countSpan) {
-            countSpan.textContent = current - 1
+            countSpan.textContent = newCount
           }
-          game.workerManager.assign(activityId, workerTypeId, current - 1)
+
+          // Disable button temporarily to prevent double clicks
+          btn.disabled = true
+          setTimeout(() => { btn.disabled = false }, 100)
+
+          game.workerManager.assign(activityId, workerTypeId, newCount)
+          console.log(`[Worker] Assigned ${newCount} ${workerTypeId} to ${activityId}`)
+        } else {
+          console.log(`[Worker] Cannot decrease - already at 0`)
         }
       })
     })
 
     plusButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
         const activityId = btn.dataset.activity
         const workerTypeId = btn.dataset.worker
         const current = game.workerManager.getAssignment(activityId, workerTypeId)
         const available = game.workerManager.getAvailableWorkers(workerTypeId)
+
+        console.log(`[Worker] Plus clicked: ${workerTypeId} on ${activityId}, current: ${current}, available: ${available}`)
+
         if (available > 0) {
+          const newCount = current + 1
           // Update immediately for instant feedback
           const countSpan = btn.parentElement.querySelector('.worker-count')
           if (countSpan) {
-            countSpan.textContent = current + 1
+            countSpan.textContent = newCount
           }
-          game.workerManager.assign(activityId, workerTypeId, current + 1)
+
+          // Disable button temporarily to prevent double clicks
+          btn.disabled = true
+          setTimeout(() => { btn.disabled = false }, 100)
+
+          game.workerManager.assign(activityId, workerTypeId, newCount)
+          console.log(`[Worker] Assigned ${newCount} ${workerTypeId} to ${activityId}`)
+        } else {
+          console.log(`[Worker] Cannot increase - no available workers`)
         }
       })
     })
 
     if (removeAllButton) {
-      removeAllButton.addEventListener('click', () => {
+      removeAllButton.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
         const activityId = removeAllButton.dataset.activity
+        console.log(`[Worker] Remove All clicked for ${activityId}`)
+
         // Update all counts to 0 immediately for instant feedback
         const workerCounts = activityDiv.querySelectorAll('.worker-count')
         workerCounts.forEach(count => {
           count.textContent = '0'
         })
+
+        // Disable button temporarily
+        removeAllButton.disabled = true
+        setTimeout(() => { if (removeAllButton) removeAllButton.disabled = false }, 100)
+
         game.workerManager.unassignAll(activityId)
+        console.log(`[Worker] Removed all workers from ${activityId}`)
       })
     }
 
@@ -466,6 +511,8 @@ function renderWorkerPanel() {
 }
 
 function handleWorkerChanged() {
+  console.log('[Render] Worker changed event triggered')
+
   // Only update the worker panel, not the entire activity list
   // The activity list buttons already update their counts immediately
   renderWorkerPanel()
@@ -476,6 +523,7 @@ function handleWorkerChanged() {
   }
 
   handleWorkerChanged.timeout = setTimeout(() => {
+    console.log('[Render] Debounced activity list re-render')
     renderActivityList(selectedSkill)  // Full re-render to update automation indicators
   }, 200)  // Longer delay - only re-render when user is done clicking
 }
