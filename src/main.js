@@ -87,6 +87,15 @@ function init() {
     restartBtn.addEventListener('click', restartGame)
   }
 
+  // Initialize audio on first user interaction
+  document.addEventListener('click', () => {
+    if (!game.audioManager.audioContext) {
+      game.audioManager.init()
+      game.audioManager.startMusic()
+      console.log('🎵 [Audio] Initialized and started')
+    }
+  }, { once: true })
+
   // Start game
   game.start()
   console.log('✅ [Game] Started successfully')
@@ -132,6 +141,13 @@ function cleanupGameListeners() {
 window.cleanupGameListeners = cleanupGameListeners
 
 function setupEventListeners() {
+  // Add click sound to all buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+      game.audioManager.playClickSound()
+    }
+  })
+
   document.getElementById('saveBtn').addEventListener('click', saveGame)
   document.getElementById('resetBtn').addEventListener('click', resetGame)
 
@@ -151,6 +167,68 @@ function setupEventListeners() {
   if (backToActivitiesBtn) {
     backToActivitiesBtn.addEventListener('click', () => {
       switchTab('activities')
+    })
+  }
+
+  // Mute button
+  const muteBtn = document.getElementById('muteBtn')
+  if (muteBtn) {
+    muteBtn.addEventListener('click', () => {
+      const isMuted = game.audioManager.toggleMute()
+      muteBtn.textContent = isMuted ? '🔇' : '🔊'
+      showNotification(isMuted ? '🔇 Muted' : '🔊 Unmuted')
+    })
+  }
+
+  // Debug button
+  const debugBtn = document.getElementById('debugBtn')
+  const debugPanel = document.getElementById('debugPanel')
+  if (debugBtn && debugPanel) {
+    debugBtn.addEventListener('click', () => {
+      const isVisible = debugPanel.style.display !== 'none'
+      debugPanel.style.display = isVisible ? 'none' : 'block'
+    })
+  }
+
+  // Debug panel actions
+  const debugAddResources = document.getElementById('debugAddResources')
+  if (debugAddResources) {
+    debugAddResources.addEventListener('click', () => {
+      Object.keys(resources).forEach(resourceId => {
+        game.resourceManager.add(resourceId, 50)
+      })
+      showNotification('🎁 Added +50 to all resources!')
+    })
+  }
+
+  const debugSkipTime = document.getElementById('debugSkipTime')
+  if (debugSkipTime) {
+    debugSkipTime.addEventListener('click', () => {
+      // Simulate 5 minutes (300000ms) of gameplay
+      for (let i = 0; i < 30; i++) {
+        game.update(10000) // 10 seconds per iteration = 5 minutes total
+      }
+      showNotification('⏩ Skipped 5 minutes!')
+    })
+  }
+
+  const debugAddWorkers = document.getElementById('debugAddWorkers')
+  if (debugAddWorkers) {
+    debugAddWorkers.addEventListener('click', () => {
+      game.workerManager.workerTypes.forEach(workerType => {
+        game.resourceManager.add(workerType.id, 10)
+      })
+      showNotification('👷 Added +10 to all worker types!')
+    })
+  }
+
+  const debugAddXP = document.getElementById('debugAddXP')
+  if (debugAddXP) {
+    debugAddXP.addEventListener('click', () => {
+      skills.forEach(skill => {
+        game.skillManager.addXP(skill.id, 1000)
+      })
+      showNotification('⭐ Added +1000 XP to all skills!')
     })
   }
 }

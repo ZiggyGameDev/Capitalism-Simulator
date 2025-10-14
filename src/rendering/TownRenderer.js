@@ -19,16 +19,13 @@ export class TownRenderer {
     this.gridColumns = 5
     this.gridRows = 4
     this.cellWidth = this.width / this.gridColumns
-    this.cellHeight = (this.height - 100) / this.gridRows // Leave space at bottom for workers
+    this.cellHeight = this.height / this.gridRows // Use full height for buildings
 
     // Building positions - map instanceId to grid position
     this.buildingPositions = new Map()
     this.nextBuildingSlot = 0
 
-    // Worker display area (bottom of canvas)
-    this.workerAreaY = this.height - 90
-
-    // Animated workers
+    // Animated workers - they walk around the entire town now!
     this.workers = []
     this.lastWorkerUpdate = 0
 
@@ -69,10 +66,6 @@ export class TownRenderer {
 
     this.ctx.fillStyle = gradient
     this.ctx.fillRect(0, 0, this.width, this.height)
-
-    // Worker area background
-    this.ctx.fillStyle = 'rgba(61, 90, 128, 0.3)'
-    this.ctx.fillRect(0, this.workerAreaY, this.width, this.height - this.workerAreaY)
   }
 
   /**
@@ -87,7 +80,7 @@ export class TownRenderer {
       const x = col * this.cellWidth
       this.ctx.beginPath()
       this.ctx.moveTo(x, 0)
-      this.ctx.lineTo(x, this.workerAreaY)
+      this.ctx.lineTo(x, this.height)
       this.ctx.stroke()
     }
 
@@ -99,14 +92,6 @@ export class TownRenderer {
       this.ctx.lineTo(this.width, y)
       this.ctx.stroke()
     }
-
-    // Separator line for worker area
-    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
-    this.ctx.lineWidth = 2
-    this.ctx.beginPath()
-    this.ctx.moveTo(0, this.workerAreaY)
-    this.ctx.lineTo(this.width, this.workerAreaY)
-    this.ctx.stroke()
   }
 
   /**
@@ -264,15 +249,15 @@ export class TownRenderer {
       worker.x += worker.vx * (deltaTime / 16)
       worker.y += worker.vy * (deltaTime / 16)
 
-      // Bounce off walls
+      // Bounce off walls - workers can now walk around the entire town!
       const margin = 20
       if (worker.x < margin || worker.x > this.width - margin) {
         worker.vx *= -1
         worker.x = Math.max(margin, Math.min(this.width - margin, worker.x))
       }
-      if (worker.y < this.workerAreaY + margin || worker.y > this.height - margin) {
+      if (worker.y < margin || worker.y > this.height - margin) {
         worker.vy *= -1
-        worker.y = Math.max(this.workerAreaY + margin, Math.min(this.height - margin, worker.y))
+        worker.y = Math.max(margin, Math.min(this.height - margin, worker.y))
       }
 
       // Randomly change direction
@@ -306,10 +291,10 @@ export class TownRenderer {
 
     if (!workerType) return
 
-    // Random position in worker area
+    // Random position anywhere in the town!
     const worker = {
-      x: Math.random() * this.width,
-      y: this.workerAreaY + 30 + Math.random() * 40,
+      x: 50 + Math.random() * (this.width - 100),
+      y: 50 + Math.random() * (this.height - 100),
       vx: (Math.random() - 0.5) * 0.8,
       vy: (Math.random() - 0.5) * 0.8,
       icon: workerType.icon,
@@ -335,24 +320,23 @@ export class TownRenderer {
    * Draw animated workers
    */
   drawAnimatedWorkers() {
-    // Draw title
-    this.ctx.font = 'bold 14px Arial'
-    this.ctx.fillStyle = '#000'
-    this.ctx.textAlign = 'left'
-    this.ctx.fillText('👷 Town Workers', 10, this.workerAreaY + 15)
-
     // Draw each worker
     this.workers.forEach(worker => {
+      // Draw shadow
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'
+      this.ctx.fillText(worker.icon, worker.x + 2, worker.y + 2)
+
       // Draw worker icon
       this.ctx.font = '28px Arial'
       this.ctx.textAlign = 'center'
       this.ctx.textBaseline = 'middle'
+      this.ctx.fillStyle = '#000'
       this.ctx.fillText(worker.icon, worker.x, worker.y)
 
       // Draw speech bubble if talking
       if (worker.speechTimer > 0) {
         // Bubble background
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
         this.ctx.strokeStyle = '#000'
         this.ctx.lineWidth = 2
 
@@ -374,14 +358,6 @@ export class TownRenderer {
         this.ctx.fillText(worker.speechText, worker.x, bubbleY + bubbleHeight / 2)
       }
     })
-
-    // If no workers, show message
-    if (this.workers.length === 0) {
-      this.ctx.font = '12px Arial'
-      this.ctx.fillStyle = '#666'
-      this.ctx.textAlign = 'center'
-      this.ctx.fillText('No workers yet - build houses to generate workers!', this.width / 2, this.workerAreaY + 45)
-    }
   }
 
   /**
@@ -449,10 +425,9 @@ export class TownRenderer {
     this.canvas.width = width
     this.canvas.height = height
 
-    // Recalculate grid
+    // Recalculate grid - use full height
     this.cellWidth = this.width / this.gridColumns
-    this.cellHeight = (this.height - 100) / this.gridRows
-    this.workerAreaY = this.height - 90
+    this.cellHeight = this.height / this.gridRows
   }
 
   /**

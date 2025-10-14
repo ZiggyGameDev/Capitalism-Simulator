@@ -1488,3 +1488,72 @@ body {
   box-shadow: 0 6px 25px rgba(16, 185, 129, 0.6);
 }
 
+
+/* Game Controls (Mute & Debug buttons) */
+.game-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-mute, .btn-debug {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.btn-mute:hover, .btn-debug:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.btn-mute:active, .btn-debug:active {
+  transform: scale(0.95);
+}
+
+/* Debug Panel */
+.debug-panel {
+  background: rgba(153, 111, 196, 0.15);
+  border: 2px solid #9a6fc4;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.debug-panel h3 {
+  color: #b087d8;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.debug-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.btn-debug-action {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  background: #9a6fc4;
+  color: white;
+  transition: all 0.2s;
+}
+
+.btn-debug-action:hover {
+  background: #b087d8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(154, 111, 196, 0.4);
+}
+
+.btn-debug-action:active {
+  transform: translateY(0);
+}

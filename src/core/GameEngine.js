@@ -5,6 +5,7 @@ import { ActivityManager } from '../managers/ActivityManager.js'
 import { UpgradeManager } from '../managers/UpgradeManager.js'
 import { WorkerManager } from '../managers/WorkerManager.js'
 import { BuildingManager } from '../managers/BuildingManager.js'
+import { AudioManager } from '../managers/AudioManager.js'
 import { levelFromXP } from '../utils/calculations.js'
 
 /**
@@ -19,6 +20,7 @@ export class GameEngine {
     this.workerManager = new WorkerManager(this.eventBus, this.resourceManager)
     this.buildingManager = new BuildingManager(this.eventBus, this.resourceManager)
     this.activityManager = new ActivityManager(activityDefinitions, this.resourceManager, this.skillManager, this.eventBus, this.upgradeManager, this.workerManager)
+    this.audioManager = new AudioManager()
 
     // Listen for resource changes to track mined amounts
     this.eventBus.on('activity:completed', (data) => {
@@ -27,6 +29,19 @@ export class GameEngine {
           this.buildingManager.trackResourceMined(resourceId, amount)
         })
       }
+    })
+
+    // Play sound effects on game events
+    this.eventBus.on('activity:completed', () => {
+      this.audioManager.playCollectSound()
+    })
+
+    this.eventBus.on('skill:levelup', () => {
+      this.audioManager.playLevelUpSound()
+    })
+
+    this.eventBus.on('building:complete', () => {
+      this.audioManager.playSuccessSound()
     })
 
     this.isRunning = false

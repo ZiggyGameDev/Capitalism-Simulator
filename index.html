@@ -14,11 +14,26 @@
       <div class="game-title">
         <h1>⛏️ Idle Clicker Game</h1>
       </div>
+      <div class="game-controls">
+        <button id="muteBtn" class="btn-mute" title="Toggle music">🔊</button>
+        <button id="debugBtn" class="btn-debug" title="Toggle debug panel">🛠️</button>
+      </div>
     </div>
 
     <!-- Currency Ticker -->
     <div class="currency-ticker-container">
       <div id="currencyTicker" class="currency-ticker"></div>
+    </div>
+
+    <!-- Debug Panel (hidden by default) -->
+    <div id="debugPanel" class="debug-panel" style="display: none;">
+      <h3>🛠️ Debug Tools</h3>
+      <div class="debug-buttons">
+        <button id="debugAddResources" class="btn-debug-action">+50 All Resources</button>
+        <button id="debugSkipTime" class="btn-debug-action">Skip 5 Minutes</button>
+        <button id="debugAddWorkers" class="btn-debug-action">+10 All Workers</button>
+        <button id="debugAddXP" class="btn-debug-action">+1000 XP All Skills</button>
+      </div>
     </div>
 
     <!-- Tab Navigation -->
