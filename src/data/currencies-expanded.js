@@ -16,15 +16,15 @@ export const currencies = {
 
   // Simple tools
   stoneTools: { id: 'stoneTools', name: 'Stone Tools', icon: '🪓', description: 'Primitive implements' },
-  woodenPlank: { id: 'woodenPlank', name: 'Wooden Planks', icon: '📏', description: 'Hand-sawn lumber' },
+  woodenPlank: { id: 'woodenPlank', name: 'Wooden Planks', icon: '🪚', description: 'Hand-sawn lumber' },
 
   // ========== PHASE 2: INDUSTRIAL (Mechanization Begins) ==========
-  flour: { id: 'flour', name: 'Flour', icon: '⚪', description: 'Milled wheat' },
+  flour: { id: 'flour', name: 'Flour', icon: '🍞', description: 'Milled wheat' },
   processedFood: { id: 'processedFood', name: 'Processed Food', icon: '🥫', description: 'Factory produced' },
 
   iron: { id: 'iron', name: 'Iron', icon: '⚙️', description: 'Smelted ore' },
   steel: { id: 'steel', name: 'Steel', icon: '🔩', description: 'Industrial metal' },
-  coal: { id: 'coal', name: 'Coal', icon: '⚫', description: 'Fuel for machines' },
+  coal: { id: 'coal', name: 'Coal', icon: '🪨', description: 'Fuel for machines' },
 
   machine: { id: 'machine', name: 'Machines', icon: '🏭', description: 'Replacing skilled labor' },
   equipment: { id: 'equipment', name: 'Equipment', icon: '🔧', description: 'Tools of efficiency' },
@@ -32,7 +32,7 @@ export const currencies = {
   // ========== PHASE 3: AUTOMATION (Humans Optional) ==========
   plastic: { id: 'plastic', name: 'Plastic', icon: '🛢️', description: 'Petroleum products' },
   electronics: { id: 'electronics', name: 'Electronics', icon: '📱', description: 'Digital components' },
-  circuit: { id: 'circuit', name: 'Circuits', icon: '💾', description: 'Logic boards' },
+  circuit: { id: 'circuit', name: 'Circuits', icon: '🔌', description: 'Logic boards' },
 
   workerUnit: { id: 'workerUnit', name: 'Worker Units', icon: '👤', description: 'Fungible human labor' },
   roboticWorker: { id: 'roboticWorker', name: 'Robotic Workers', icon: '🤖', description: 'No breaks, no complaints' },

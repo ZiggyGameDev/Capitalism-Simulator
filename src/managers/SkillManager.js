@@ -54,6 +54,32 @@ export class SkillManager {
   }
 
   /**
+   * Set XP directly (for loading saved state)
+   * @param {string} skillId - Skill identifier
+   * @param {number} xp - XP to set
+   */
+  setXP(skillId, xp) {
+    if (!this.skills[skillId]) {
+      return  // Skill doesn't exist
+    }
+
+    const oldLevel = this.skills[skillId].level
+    this.skills[skillId].xp = xp
+    const newLevel = levelFromXP(xp)
+    this.skills[skillId].level = newLevel
+
+    // Don't emit xpGained event for loading (would be confusing)
+    // But do emit level up if the loaded state has higher level
+    if (newLevel > oldLevel && this.eventBus) {
+      this.eventBus.emit('skill:levelup', {
+        skillId,
+        newLevel,
+        oldLevel
+      })
+    }
+  }
+
+  /**
    * Get current level of a skill
    * @param {string} skillId - Skill identifier
    * @returns {number} Current level

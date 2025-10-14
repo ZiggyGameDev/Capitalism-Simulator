@@ -153,10 +153,19 @@ export class WorkerManager {
         }
       }
 
-      // Logarithmic scaling for multiple workers of same type
-      // Formula: baseSpeed * (1 + 0.3 * log10(count))
+      // Diminishing returns for multiple workers of same type
+      // Formula: baseSpeed * (1 + scalingBonus)
+      // Uses log10 with reduced scaling and caps out
       if (count > 1) {
-        speed *= (1 + 0.3 * Math.log10(count))
+        // Reduced scaling factor (0.15 instead of 0.3) for stronger diminishing returns
+        // Examples with 0.2 baseSpeed:
+        // 1 worker: 0.2 (baseline)
+        // 5 workers: 0.2 * 1.105 = 0.221 (+10.5%)
+        // 10 workers: 0.2 * 1.15 = 0.23 (+15%)
+        // 50 workers: 0.2 * 1.255 = 0.251 (+25.5%)
+        // 100 workers: 0.2 * 1.3 = 0.26 (+30%)
+        const scalingBonus = Math.min(0.4, 0.15 * Math.log10(count))  // Cap at +40%
+        speed *= (1 + scalingBonus)
       }
 
       // Apply active speed boosts
@@ -218,7 +227,7 @@ export class WorkerManager {
       if (boost) {
         const currentAmount = this.currencyManager.get(boostId)
         const consumeAmount = Math.min(boost.consumptionRate, currentAmount)
-        this.currencyManager.spend(boostId, consumeAmount)
+        this.currencyManager.subtract(boostId, consumeAmount)
       }
     }
   }

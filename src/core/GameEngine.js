@@ -12,7 +12,7 @@ import { levelFromXP } from '../utils/calculations.js'
 export class GameEngine {
   constructor(skillDefinitions, activityDefinitions, upgradeDefinitions = []) {
     this.eventBus = new EventBus()
-    this.currencyManager = new CurrencyManager()
+    this.currencyManager = new CurrencyManager(this.eventBus)
     this.skillManager = new SkillManager(skillDefinitions, activityDefinitions, this.eventBus)
     this.upgradeManager = new UpgradeManager(upgradeDefinitions, this.currencyManager, this.skillManager, this.eventBus)
     this.workerManager = new WorkerManager(this.eventBus, this.currencyManager)
@@ -21,9 +21,6 @@ export class GameEngine {
     this.isRunning = false
     this.isPaused = false
     this.lastUpdateTime = 0
-
-    // Give starting workers so players can test the automation system immediately
-    this.currencyManager.add('basicWorker', 2)
   }
 
   /**
@@ -125,10 +122,6 @@ export class GameEngine {
     return {
       currencies: this.currencyManager.getAll(),
       skills: this.skillManager.getAllSkills(),
-      activeActivities: this.activityManager.getActiveActivities().map(a => ({
-        activityId: a.activityId,
-        autoMode: a.autoMode
-      })),
       upgrades: this.upgradeManager.getState(),
       workers: this.workerManager.getState(),
       lastSaveTime: Date.now()
@@ -151,7 +144,7 @@ export class GameEngine {
     if (state.skills) {
       Object.entries(state.skills).forEach(([id, skillState]) => {
         if (skillState.xp) {
-          this.skillManager.addXP(id, skillState.xp)
+          this.skillManager.setXP(id, skillState.xp)
         }
       })
     }
@@ -177,14 +170,7 @@ export class GameEngine {
       }
     }
 
-    // Restart auto-activities
-    if (state.activeActivities) {
-      state.activeActivities.forEach(activity => {
-        if (activity.autoMode && this.activityManager.canStart(activity.activityId)) {
-          this.activityManager.start(activity.activityId, { autoMode: true })
-        }
-      })
-    }
+    // Note: Activities will auto-start on next update() call if workers are assigned
   }
 
   /**
@@ -196,9 +182,6 @@ export class GameEngine {
     this.activityManager.reset()
     this.upgradeManager.reset()
     this.workerManager.reset()
-
-    // Give starting workers again after reset
-    this.currencyManager.add('basicWorker', 2)
   }
 
   /**
@@ -218,8 +201,18 @@ export class GameEngine {
       totalTime: cappedTime
     }
 
-    // If no auto-activities, return empty result
-    if (!savedState.activeActivities || savedState.activeActivities.length === 0) {
+    // Get automated activities (activities with workers assigned)
+    if (!savedState.workers || !savedState.workers.assignments) {
+      result.totalTime = 0
+      return result
+    }
+
+    const workerAssignments = savedState.workers.assignments
+    const automatedActivityIds = Object.keys(workerAssignments).filter(
+      activityId => Object.values(workerAssignments[activityId] || {}).some(count => count > 0)
+    )
+
+    if (automatedActivityIds.length === 0) {
       result.totalTime = 0
       return result
     }
@@ -227,22 +220,14 @@ export class GameEngine {
     // Create a temporary currency state to track resources
     const tempCurrencies = { ...savedState.currencies }
 
-    // Get auto-activities
-    const autoActivities = savedState.activeActivities.filter(a => a.autoMode)
-
-    if (autoActivities.length === 0) {
-      result.totalTime = 0
-      return result
-    }
-
     // Simulate time passing - find smallest duration to advance time in chunks
     let simulatedTime = 0
 
     while (simulatedTime < cappedTime) {
       // Find the shortest activity duration
       let shortestDuration = Infinity
-      for (const activityState of autoActivities) {
-        const activity = this.activityManager.activityDefinitions.find(a => a.id === activityState.activityId)
+      for (const activityId of automatedActivityIds) {
+        const activity = this.activityManager.activityDefinitions.find(a => a.id === activityId)
         if (activity) {
           shortestDuration = Math.min(shortestDuration, activity.duration * 1000)
         }
@@ -256,9 +241,9 @@ export class GameEngine {
 
       let anyActivityCompleted = false
 
-      // Try to complete each auto-activity that has finished
-      for (const activityState of autoActivities) {
-        const activity = this.activityManager.activityDefinitions.find(a => a.id === activityState.activityId)
+      // Try to complete each automated activity that has finished
+      for (const activityId of automatedActivityIds) {
+        const activity = this.activityManager.activityDefinitions.find(a => a.id === activityId)
 
         if (!activity) continue
 

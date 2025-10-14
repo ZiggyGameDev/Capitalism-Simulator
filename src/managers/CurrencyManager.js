@@ -3,8 +3,9 @@
  * Currencies are just numbers - no inventory complexity
  */
 export class CurrencyManager {
-  constructor() {
+  constructor(eventBus = null) {
     this.currencies = {}
+    this.eventBus = eventBus
   }
 
   /**
@@ -16,6 +17,10 @@ export class CurrencyManager {
     const current = this.currencies[currencyId] || 0
     const newAmount = current + amount
     this.currencies[currencyId] = Math.max(0, newAmount)  // Never go below 0
+
+    if (this.eventBus) {
+      this.eventBus.emit('currency:changed', { currencyId, amount: this.currencies[currencyId] })
+    }
   }
 
   /**
@@ -29,6 +34,10 @@ export class CurrencyManager {
       return false
     }
     this.currencies[currencyId] -= amount
+
+    if (this.eventBus) {
+      this.eventBus.emit('currency:changed', { currencyId, amount: this.currencies[currencyId] })
+    }
     return true
   }
 
@@ -39,6 +48,10 @@ export class CurrencyManager {
    */
   set(currencyId, amount) {
     this.currencies[currencyId] = Math.max(0, amount)
+
+    if (this.eventBus) {
+      this.eventBus.emit('currency:changed', { currencyId, amount: this.currencies[currencyId] })
+    }
   }
 
   /**

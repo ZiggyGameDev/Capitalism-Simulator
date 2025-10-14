@@ -253,8 +253,8 @@ describe('WorkerManager', () => {
 
     it('should scale logarithmically with more workers', () => {
       workerManager.assign('chopWood', 'basicWorker', 10)
-      // Formula: 0.2 * (1 + 0.3 * log10(10)) = 0.2 * 1.3 = 0.26
-      expect(workerManager.getSpeedMultiplier('chopWood')).toBeCloseTo(0.26, 2)
+      // Formula: 0.2 * (1 + 0.15 * log10(10)) = 0.2 * 1.15 = 0.23
+      expect(workerManager.getSpeedMultiplier('chopWood')).toBeCloseTo(0.23, 2)
     })
 
     it('should return best speed among multiple worker types', () => {

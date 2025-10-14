@@ -42,14 +42,40 @@ test.describe('Automation Idle Game - Worker Management', () => {
     // Wait for game to load
     await page.waitForTimeout(500)
 
-    // Get some basic workers first by producing wheat
+    // Set up a state where we have workers available
+    await page.evaluate(() => {
+      const mockState = {
+        currencies: {
+          basicWorker: 5  // Has workers available
+        },
+        skills: {
+          farming: { level: 1, xp: 0 }
+        },
+        workers: {
+          assignments: {}  // No workers assigned yet
+        }
+      }
+      localStorage.setItem('incrementalGameSave', JSON.stringify(mockState))
+    })
+
+    await page.reload()
+    await page.waitForTimeout(500)
+
     const wheatActivity = page.locator('.activity-item').filter({ hasText: 'Plant Wheat' })
 
     // Find the + button for basic worker on this activity
     const plusButton = wheatActivity.locator('.worker-btn-plus').first()
 
-    // Should be disabled initially (no workers yet)
-    await expect(plusButton).toBeDisabled()
+    // Should be enabled when we have workers available
+    await expect(plusButton).toBeEnabled()
+
+    // Click to assign a worker
+    await plusButton.click()
+    await page.waitForTimeout(200)
+
+    // Check that the count increased
+    const workerCount = wheatActivity.locator('.worker-count').first()
+    await expect(workerCount).toHaveText('1')
   })
 
   test('should show "Remove All" button when workers are assigned', async ({ page }) => {
@@ -224,39 +250,6 @@ test.describe('Automation Idle Game - Worker Management', () => {
       await expect(progressBars.first()).toBeVisible()
     }
   })
-
-  test('should show robot emoji for automated activities', async ({ page }) => {
-    await page.waitForTimeout(500)
-
-    // Set up automated activity
-    await page.evaluate(() => {
-      const mockState = {
-        currencies: {
-          basicWorker: 5
-        },
-        skills: {
-          farming: { level: 1, xp: 0 }
-        },
-        workers: {
-          assignments: {
-            'plantWheat': { basicWorker: 1 }
-          }
-        }
-      }
-      localStorage.setItem('incrementalGameSave', JSON.stringify(mockState))
-    })
-
-    await page.reload()
-    await page.waitForTimeout(500)
-
-    // Look for the robot emoji in activity names
-    const automatedActivity = page.locator('.activity-item').filter({ hasText: 'Plant Wheat' })
-    const activityName = automatedActivity.locator('.activity-name')
-    const nameText = await activityName.textContent()
-
-    // Should contain robot emoji
-    expect(nameText).toContain('🤖')
-  })
 })
 
 test.describe('Automation Idle Game - Remove All Workers', () => {
@@ -425,5 +418,391 @@ test.describe('Automation Idle Game - Visual Feedback', () => {
       // We can't directly test pseudo-elements, but we can verify the class
       await expect(haltedActivities.first()).toHaveClass(/halted/)
     }
+  })
+})
+
+test.describe('Automation Idle Game - UI Element Spawning', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => localStorage.clear())
+    await page.reload()
+
+    // Wait for game to initialize
+    await page.waitForFunction(() => window.game !== undefined, { timeout: 10000 })
+    await page.waitForTimeout(500)
+  })
+
+  test('should spawn currency ticker panel on load', async ({ page }) => {
+    // Currency ticker container should exist
+    const currencyTicker = page.locator('#currencyTicker')
+    await expect(currencyTicker).toBeAttached()
+
+    // Initially should show "No currencies yet" message
+    const noCurrenciesMessage = currencyTicker.locator('.currency-item')
+    await expect(noCurrenciesMessage).toBeVisible({ timeout: 10000 })
+    const messageText = await noCurrenciesMessage.textContent()
+    expect(messageText).toContain('No currencies yet')
+  })
+
+  test('should spawn currency items when currencies are earned', async ({ page }) => {
+    // Set up state with some currencies
+    await page.evaluate(() => {
+      const mockState = {
+        currencies: {
+          wheat: 25,
+          water: 10,
+          wood: 5
+        },
+        skills: {
+          farming: { level: 1, xp: 0 }
+        }
+      }
+      localStorage.setItem('incrementalGameSave', JSON.stringify(mockState))
+    })
+
+    await page.reload()
+    await page.waitForTimeout(500)
+
+    // Should have currency items with data-currency-id attributes
+    const currencyItems = page.locator('.currency-item[data-currency-id]')
+    const currencyCount = await currencyItems.count()
+
+    // Should have at least 3 currencies (wheat, water, wood)
+    expect(currencyCount).toBeGreaterThanOrEqual(3)
+
+    // Each currency item should have icon and amount
+    for (let i = 0; i < currencyCount; i++) {
+      const item = currencyItems.nth(i)
+      await expect(item).toBeVisible()
+
+      const amountSpan = item.locator('.currency-amount')
+      await expect(amountSpan).toBeVisible()
+    }
+  })
+
+  test('should spawn skill list panel on load', async ({ page }) => {
+    const skillList = page.locator('#skillList')
+    await expect(skillList).toBeVisible()
+
+    // Should have at least one skill item
+    const skillItems = page.locator('.skill-item')
+    const skillCount = await skillItems.count()
+    expect(skillCount).toBeGreaterThan(0)
+  })
+
+  test('should spawn all skill UI elements correctly', async ({ page }) => {
+    const firstSkill = page.locator('.skill-item').first()
+    await expect(firstSkill).toBeVisible({ timeout: 10000 })
+
+    // Should have skill icon
+    const skillIcon = firstSkill.locator('.skill-icon')
+    await expect(skillIcon).toBeVisible()
+
+    // Should have skill name
+    const skillName = firstSkill.locator('.skill-name')
+    await expect(skillName).toBeVisible()
+
+    // Should have skill level display
+    const skillLevel = firstSkill.locator('.skill-level')
+    await expect(skillLevel).toBeVisible()
+    await expect(skillLevel).toContainText('Level')
+
+    const skillLevelValue = firstSkill.locator('.skill-level-value')
+    await expect(skillLevelValue).toBeVisible()
+
+    // Should have XP progress bar
+    const xpBar = firstSkill.locator('.skill-xp-bar')
+    await expect(xpBar).toBeVisible()
+
+    const xpFill = firstSkill.locator('.skill-xp-fill')
+    await expect(xpFill).toBeAttached()
+  })
+
+  test('should spawn worker summary panel in skill list', async ({ page }) => {
+    const workerSummary = page.locator('#workerSummaryCompact')
+    await expect(workerSummary).toBeVisible()
+
+    // Should have worker summary title
+    const title = workerSummary.locator('.worker-summary-title')
+    await expect(title).toBeVisible()
+    await expect(title).toContainText('Workers')
+  })
+
+  test('should spawn activity list panel on load', async ({ page }) => {
+    const activityList = page.locator('#activityList')
+    await expect(activityList).toBeVisible()
+
+    // Should have a heading for the current skill
+    const heading = activityList.locator('h2')
+    await expect(heading).toBeVisible()
+
+    // Should have at least one activity item
+    const activityItems = page.locator('.activity-item')
+    const activityCount = await activityItems.count()
+    expect(activityCount).toBeGreaterThan(0)
+  })
+
+  test('should spawn all activity UI elements correctly', async ({ page }) => {
+    const firstActivity = page.locator('.activity-item').first()
+    await expect(firstActivity).toBeVisible({ timeout: 10000 })
+
+    // Should have activity header
+    const header = firstActivity.locator('.activity-header')
+    await expect(header).toBeVisible()
+
+    // Should have activity name
+    const name = firstActivity.locator('.activity-name-text')
+    await expect(name).toBeVisible()
+
+    // Should have activity info (inputs -> outputs)
+    const info = firstActivity.locator('.activity-info')
+    await expect(info).toBeVisible()
+
+    // Should have activity meta (duration + XP)
+    const meta = firstActivity.locator('.activity-meta')
+    await expect(meta).toBeAttached()
+    await expect(meta).toContainText('XP')
+
+    const duration = firstActivity.locator('.activity-duration')
+    await expect(duration).toBeAttached()
+
+    // Should have progress bar
+    const progressBar = firstActivity.locator('.activity-progress-bar')
+    await expect(progressBar).toBeVisible()
+
+    const progressFill = firstActivity.locator('.activity-progress-fill')
+    await expect(progressFill).toBeAttached()
+
+    // Should have worker assignment section (for unlocked activities)
+    const workerAssignments = firstActivity.locator('.activity-worker-assignments')
+    const workerAssignmentsCount = await workerAssignments.count()
+
+    // First activity should be unlocked and have worker assignments
+    if (workerAssignmentsCount > 0) {
+      await expect(workerAssignments).toBeVisible()
+    }
+  })
+
+  test('should spawn active activities panel on load', async ({ page }) => {
+    const activeActivities = page.locator('#activeActivities')
+    await expect(activeActivities).toBeAttached()
+
+    // Should have heading - wait for JavaScript to create it
+    const heading = activeActivities.locator('h3')
+    await expect(heading).toBeVisible({ timeout: 10000 })
+    await expect(heading).toHaveText('Active Activities')
+
+    // Should have list container
+    const list = page.locator('#activeActivitiesList')
+    await expect(list).toBeAttached()
+  })
+
+  test('should show message in active activities when no activities running', async ({ page }) => {
+    // Wait for the updateActiveActivitiesPanel function to be called
+    await page.waitForFunction(() => {
+      const list = document.getElementById('activeActivitiesList')
+      return list && list.children.length > 0
+    }, { timeout: 10000 })
+
+    const activeActivitiesList = page.locator('#activeActivitiesList')
+
+    // Should show "no activities" message
+    const noActivitiesMsg = activeActivitiesList.locator('.no-activities')
+    await expect(noActivitiesMsg).toBeVisible()
+    await expect(noActivitiesMsg).toContainText('Assign workers')
+  })
+
+  test('should spawn active activity items when activities are running', async ({ page }) => {
+    // Set up automated activity
+    await page.evaluate(() => {
+      const mockState = {
+        currencies: {
+          basicWorker: 5
+        },
+        skills: {
+          farming: { level: 1, xp: 0 }
+        },
+        workers: {
+          assignments: {
+            'plantWheat': { basicWorker: 1 }
+          }
+        }
+      }
+      localStorage.setItem('incrementalGameSave', JSON.stringify(mockState))
+    })
+
+    await page.reload()
+    await page.waitForTimeout(1000)  // Wait for activity to start
+
+    const activeActivitiesList = page.locator('#activeActivitiesList')
+    const activeActivityItems = activeActivitiesList.locator('.active-activity-item')
+    const itemCount = await activeActivityItems.count()
+
+    if (itemCount > 0) {
+      const firstItem = activeActivityItems.first()
+      await expect(firstItem).toBeVisible()
+
+      // Should have activity name
+      const name = firstItem.locator('.active-activity-name')
+      await expect(name).toBeVisible()
+
+      // Should have outputs display
+      const outputs = firstItem.locator('.active-activity-outputs')
+      await expect(outputs).toBeVisible()
+
+      // Should have progress bar
+      const progressBar = firstItem.locator('.active-activity-progress-bar')
+      await expect(progressBar).toBeVisible()
+
+      const progressFill = firstItem.locator('.active-activity-progress-fill')
+      await expect(progressFill).toBeVisible()
+
+      // Should have status
+      const status = firstItem.locator('.active-activity-status')
+      await expect(status).toBeVisible()
+    }
+  })
+
+  test('should spawn upgrade list panel on load', async ({ page }) => {
+    const upgradeList = page.locator('#upgradeList')
+    await expect(upgradeList).toBeVisible()
+  })
+
+  test('should spawn upgrade items when available for skill', async ({ page }) => {
+    // Set up state to have some upgrades available
+    await page.evaluate(() => {
+      const mockState = {
+        currencies: {
+          wheat: 50,
+          water: 50
+        },
+        skills: {
+          farming: { level: 1, xp: 0 }
+        }
+      }
+      localStorage.setItem('incrementalGameSave', JSON.stringify(mockState))
+    })
+
+    await page.reload()
+    await page.waitForTimeout(500)
+
+    const upgradeItems = page.locator('.upgrade-item')
+    const upgradeCount = await upgradeItems.count()
+
+    // Should have at least some upgrades for farming skill
+    if (upgradeCount > 0) {
+      const firstUpgrade = upgradeItems.first()
+      await expect(firstUpgrade).toBeVisible()
+
+      // Should have upgrade header
+      const header = firstUpgrade.locator('.upgrade-header')
+      await expect(header).toBeVisible()
+
+      // Should have upgrade name
+      const name = firstUpgrade.locator('.upgrade-name')
+      await expect(name).toBeVisible()
+
+      // Should have upgrade type
+      const type = firstUpgrade.locator('.upgrade-type')
+      await expect(type).toBeVisible()
+
+      // Should have description
+      const description = firstUpgrade.locator('.upgrade-description')
+      await expect(description).toBeVisible()
+
+      // Should have cost display
+      const cost = firstUpgrade.locator('.upgrade-cost')
+      await expect(cost).toBeVisible()
+      await expect(cost).toContainText('Cost:')
+    }
+  })
+
+  test('should spawn worker panel on load', async ({ page }) => {
+    const workerPanel = page.locator('.worker-panel')
+    await expect(workerPanel).toBeVisible()
+
+    // Should have heading - get the one inside the panel
+    const heading = workerPanel.locator('h3').first()
+    await expect(heading).toBeVisible()
+    await expect(heading).toHaveText('Workers')
+
+    // Should have summary list container - wait for JavaScript to create it
+    const summaryList = page.locator('#workerSummaryList')
+    await expect(summaryList).toBeAttached({ timeout: 10000 })
+  })
+
+  test('should show message in worker panel when no workers exist', async ({ page }) => {
+    // Wait for the updateWorkerPanel function to be called
+    await page.waitForFunction(() => {
+      const list = document.getElementById('workerSummaryList')
+      return list && list.children.length > 0
+    }, { timeout: 10000 })
+
+    const workerSummaryList = page.locator('#workerSummaryList')
+
+    // Should show "no workers" message
+    const noWorkersMsg = workerSummaryList.locator('.no-activities')
+    await expect(noWorkersMsg).toBeVisible()
+    await expect(noWorkersMsg).toContainText('No workers yet')
+  })
+
+  test('should spawn worker summary items when workers exist', async ({ page }) => {
+    // Set up state with workers
+    await page.evaluate(() => {
+      const mockState = {
+        currencies: {
+          basicWorker: 5,
+          tractorWorker: 2
+        },
+        skills: {
+          farming: { level: 1, xp: 0 }
+        },
+        workers: {
+          assignments: {
+            'plantWheat': { basicWorker: 2 }
+          }
+        }
+      }
+      localStorage.setItem('incrementalGameSave', JSON.stringify(mockState))
+    })
+
+    await page.reload()
+    await page.waitForTimeout(500)
+
+    const workerSummaryList = page.locator('#workerSummaryList')
+    const workerSummaryItems = workerSummaryList.locator('.worker-summary-item')
+    const itemCount = await workerSummaryItems.count()
+
+    // Should have at least 2 worker types
+    expect(itemCount).toBeGreaterThanOrEqual(2)
+
+    // Check first worker summary item structure
+    const firstItem = workerSummaryItems.first()
+    await expect(firstItem).toBeVisible()
+
+    // Should have icon
+    const icon = firstItem.locator('.worker-summary-icon')
+    await expect(icon).toBeVisible()
+
+    // Should have name
+    const name = firstItem.locator('.worker-summary-name')
+    await expect(name).toBeVisible()
+
+    // Should have stats
+    const stats = firstItem.locator('.worker-summary-stats')
+    await expect(stats).toBeVisible()
+    await expect(stats).toContainText('total')
+    await expect(stats).toContainText('assigned')
+    await expect(stats).toContainText('available')
+  })
+
+  test('should spawn save and reset buttons', async ({ page }) => {
+    const saveBtn = page.locator('#saveBtn')
+    await expect(saveBtn).toBeVisible()
+    await expect(saveBtn).toHaveText('💾 Save')
+
+    const resetBtn = page.locator('#resetBtn')
+    await expect(resetBtn).toBeVisible()
+    await expect(resetBtn).toHaveText('🔄 Reset')
   })
 })

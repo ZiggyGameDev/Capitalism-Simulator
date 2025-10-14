@@ -15,7 +15,7 @@ describe('Offline Progress', () => {
       const result = game.calculateOfflineProgress(60000, {
         currencies: {},
         skills: {},
-        activeActivities: []
+        workers: { assignments: {} }
       })
 
       expect(result.activitiesCompleted).toEqual([])
@@ -23,13 +23,15 @@ describe('Offline Progress', () => {
     })
 
     it('should simulate activity completions during offline time', () => {
-      // Start a free activity (chop normal tree - 2 seconds)
+      // Start a free activity (chop normal tree - 2 seconds) with workers assigned
       const state = {
-        currencies: {},
+        currencies: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
-        activeActivities: [
-          { activityId: 'chopNormalTree', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'chopNormalTree': { basicWorker: 1 }
+          }
+        }
       }
 
       // 10 seconds offline = 5 completions of 2-second activity
@@ -42,11 +44,13 @@ describe('Offline Progress', () => {
     it('should respect currency requirements for activities', () => {
       // Activity needs inputs but state has no currencies
       const state = {
-        currencies: {},
+        currencies: { basicWorker: 1 },
         skills: { cooking: { xp: 50, level: 2 } },
-        activeActivities: [
-          { activityId: 'cookShrimp', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'cookShrimp': { basicWorker: 1 }
+          }
+        }
       }
 
       // cookShrimp needs rawShrimp, which we don't have
@@ -57,11 +61,13 @@ describe('Offline Progress', () => {
 
     it('should award currencies from completed activities', () => {
       const state = {
-        currencies: {},
+        currencies: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
-        activeActivities: [
-          { activityId: 'chopNormalTree', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'chopNormalTree': { basicWorker: 1 }
+          }
+        }
       }
 
       const result = game.calculateOfflineProgress(10000, state)
@@ -72,11 +78,13 @@ describe('Offline Progress', () => {
 
     it('should award XP from completed activities', () => {
       const state = {
-        currencies: {},
+        currencies: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
-        activeActivities: [
-          { activityId: 'chopNormalTree', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'chopNormalTree': { basicWorker: 1 }
+          }
+        }
       }
 
       const result = game.calculateOfflineProgress(10000, state)
@@ -87,11 +95,13 @@ describe('Offline Progress', () => {
 
     it('should cap offline progress at 8 hours', () => {
       const state = {
-        currencies: {},
+        currencies: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
-        activeActivities: [
-          { activityId: 'chopNormalTree', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'chopNormalTree': { basicWorker: 1 }
+          }
+        }
       }
 
       const tenHours = 10 * 60 * 60 * 1000
@@ -105,15 +115,17 @@ describe('Offline Progress', () => {
 
     it('should handle multiple simultaneous activities', () => {
       const state = {
-        currencies: {},
+        currencies: { basicWorker: 2 },
         skills: {
           woodcutting: { xp: 0, level: 1 },
           mining: { xp: 0, level: 1 }
         },
-        activeActivities: [
-          { activityId: 'chopNormalTree', autoMode: true },
-          { activityId: 'mineCopperOre', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'chopNormalTree': { basicWorker: 1 },
+            'mineCopperOre': { basicWorker: 1 }
+          }
+        }
       }
 
       const result = game.calculateOfflineProgress(10000, state)
@@ -127,11 +139,16 @@ describe('Offline Progress', () => {
     it('should stop processing activity when resources run out', () => {
       // Start with limited resources
       const state = {
-        currencies: { shrimp: 2 }, // Only enough for 2 completions
+        currencies: {
+          basicWorker: 1,
+          shrimp: 2  // Only enough for 2 completions
+        },
         skills: { cooking: { xp: 50, level: 2 } },
-        activeActivities: [
-          { activityId: 'cookShrimp', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'cookShrimp': { basicWorker: 1 }
+          }
+        }
       }
 
       // Request 60 seconds offline (would be 30 completions at 2s each)
@@ -145,11 +162,17 @@ describe('Offline Progress', () => {
     it('should handle production chains correctly', () => {
       // Have resources to run a production chain
       const state = {
-        currencies: { puppy: 3, cookedShrimp: 10 },
+        currencies: {
+          basicWorker: 1,
+          puppy: 3,
+          cookedShrimp: 10
+        },
         skills: { dogHandling: { xp: 152, level: 5 } }, // 152 XP = level 5
-        activeActivities: [
-          { activityId: 'trainGuardDog', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'trainGuardDog': { basicWorker: 1 }
+          }
+        }
       }
 
       // 30 seconds offline - trainGuardDog takes 5s and needs 1 puppy + 3 cooked shrimp
@@ -214,11 +237,13 @@ describe('Offline Progress', () => {
       const tenSecondsAgo = now - 10000
 
       const state = {
-        currencies: {},
+        currencies: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
-        activeActivities: [
-          { activityId: 'chopNormalTree', autoMode: true }
-        ],
+        workers: {
+          assignments: {
+            'chopNormalTree': { basicWorker: 1 }
+          }
+        },
         lastSaveTime: tenSecondsAgo
       }
 
@@ -230,11 +255,13 @@ describe('Offline Progress', () => {
 
     it('should not apply offline progress if no lastSaveTime', () => {
       const state = {
-        currencies: {},
+        currencies: { basicWorker: 1 },
         skills: { woodcutting: { xp: 0, level: 1 } },
-        activeActivities: [
-          { activityId: 'chopNormalTree', autoMode: true }
-        ]
+        workers: {
+          assignments: {
+            'chopNormalTree': { basicWorker: 1 }
+          }
+        }
         // No lastSaveTime property
       }
 
