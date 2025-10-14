@@ -12,42 +12,42 @@ export const activities = [
     skillId: 'farming',
     levelRequired: 1,
     inputs: {},
-    outputs: { wheat: 1 },
-    duration: 3,
-    xpGained: 5,
+    outputs: { wheat: 2 },
+    duration: 2,
+    xpGained: 8,
     description: 'Back-breaking manual labor in the fields'
   },
   {
     id: 'plantCorn',
     name: 'Plant Corn',
     skillId: 'farming',
-    levelRequired: 3,
+    levelRequired: 2,
     inputs: {},
-    outputs: { corn: 1 },
-    duration: 3,
-    xpGained: 6,
+    outputs: { corn: 2 },
+    duration: 2,
+    xpGained: 10,
     description: 'Subsistence farming'
   },
   {
     id: 'growTomatoes',
     name: 'Grow Tomatoes',
     skillId: 'farming',
-    levelRequired: 5,
+    levelRequired: 4,
     inputs: { water: 1 },
-    outputs: { tomato: 2 },
-    duration: 4,
-    xpGained: 8,
+    outputs: { tomato: 3 },
+    duration: 3,
+    xpGained: 12,
     description: 'Small-scale vegetable cultivation'
   },
   {
     id: 'harvestPotatoes',
     name: 'Harvest Potatoes',
     skillId: 'farming',
-    levelRequired: 8,
+    levelRequired: 6,
     inputs: { water: 2 },
-    outputs: { potato: 3 },
-    duration: 4,
-    xpGained: 10,
+    outputs: { potato: 4 },
+    duration: 3,
+    xpGained: 15,
     description: 'Digging in the dirt for sustenance'
   },
 
@@ -58,9 +58,9 @@ export const activities = [
     skillId: 'gathering',
     levelRequired: 1,
     inputs: {},
-    outputs: { wood: 1 },
-    duration: 2,
-    xpGained: 4,
+    outputs: { wood: 2 },
+    duration: 1.5,
+    xpGained: 6,
     description: 'Manual forestry'
   },
   {
@@ -69,9 +69,9 @@ export const activities = [
     skillId: 'gathering',
     levelRequired: 1,
     inputs: {},
-    outputs: { stone: 1 },
-    duration: 2,
-    xpGained: 5,
+    outputs: { stone: 2 },
+    duration: 1.5,
+    xpGained: 8,
     description: 'Breaking rocks with primitive tools'
   },
   {
@@ -80,9 +80,9 @@ export const activities = [
     skillId: 'gathering',
     levelRequired: 1,
     inputs: {},
-    outputs: { water: 2 },
-    duration: 2,
-    xpGained: 3,
+    outputs: { water: 3 },
+    duration: 1,
+    xpGained: 5,
     description: 'Carrying buckets from the well'
   },
 
@@ -94,8 +94,8 @@ export const activities = [
     levelRequired: 1,
     inputs: { stone: 2, wood: 1 },
     outputs: { stoneTools: 1 },
-    duration: 5,
-    xpGained: 8,
+    duration: 4,
+    xpGained: 12,
     description: 'Primitive tool making'
   },
   {

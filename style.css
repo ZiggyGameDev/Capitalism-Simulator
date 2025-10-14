@@ -1557,3 +1557,195 @@ body {
 .btn-debug-action:active {
   transform: translateY(0);
 }
+
+/* ========== ENHANCED VISUAL POLISH ========== */
+
+/* Sleek static gradients for panels */
+.skill-panel, .activity-panel, .active-panel, .upgrade-panel, .worker-panel {
+  background: rgba(30, 30, 46, 0.95);
+  border: 1px solid rgba(123, 140, 222, 0.2);
+}
+
+/* Glow effects on hover */
+.activity-item:hover {
+  box-shadow: 0 0 20px rgba(123, 140, 222, 0.4);
+  transform: translateY(-2px);
+}
+
+.skill-item:hover {
+  box-shadow: 0 0 15px rgba(123, 140, 222, 0.3);
+}
+
+/* Smooth transitions everywhere */
+* {
+  transition: all 0.2s ease;
+}
+
+/* Glowing progress bars */
+.skill-xp-fill, .activity-progress-fill, .active-activity-progress-fill {
+  box-shadow: 0 0 10px rgba(123, 140, 222, 0.6);
+}
+
+/* Subtle glow for active activities */
+.activity-item.running {
+  box-shadow: 0 0 15px rgba(123, 140, 222, 0.5);
+}
+
+/* Particle effect container */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  font-size: 24px;
+  z-index: 9999;
+  animation: floatUp 1.5s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Enhanced button effects */
+button {
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+button:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Sleek modern night mode - subtle border glow */
+.activity-item {
+  position: relative;
+  border: 2px solid #404060;
+}
+
+.activity-item:not(.locked)::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 8px;
+  padding: 2px;
+  background: linear-gradient(135deg, #7b8cde, #9a6fc4, #7b8cde);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.activity-item:not(.locked):hover::before {
+  opacity: 0.6;
+}
+
+/* Enhanced notifications */
+.notification {
+  animation: slideInBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  box-shadow: 0 10px 40px rgba(76, 175, 80, 0.4);
+}
+
+@keyframes slideInBounce {
+  0% {
+    transform: translateX(400px) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-20px) scale(1.1);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Glowing currency items */
+.currency-item {
+  box-shadow: 0 0 10px rgba(123, 140, 222, 0.3);
+  transition: all 0.3s ease;
+}
+
+.currency-item:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(123, 140, 222, 0.6);
+}
+
+/* Better upgrade cards */
+.upgrade-item:not(.purchased):not(.locked):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 20px rgba(123, 140, 222, 0.4);
+}
+
+/* Building card enhancements */
+.building-card:hover {
+  box-shadow: 0 10px 30px rgba(66, 153, 225, 0.4);
+}
+
+/* Smooth canvas rendering */
+canvas {
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Enhanced worker summary */
+.worker-summary-compact {
+  background: linear-gradient(135deg, #2a2a3e 0%, #3a3a5e 100%);
+  box-shadow: inset 0 0 20px rgba(123, 140, 222, 0.2);
+}
+
+/* Responsive layout - no scrolling */
+@media (min-height: 900px) {
+  .game-main {
+    max-height: calc(100vh - 200px);
+  }
+  
+  .activity-panel {
+    max-height: calc(100vh - 250px);
+  }
+}
+
+/* Scale down for smaller screens */
+@media (max-height: 800px) {
+  .activity-item {
+    min-height: 160px;
+    padding: 12px;
+  }
+  
+  .activity-simulation-canvas {
+    height: 60px !important;
+  }
+  
+  .game-status-bar {
+    padding: 10px 20px;
+  }
+  
+  h1 {
+    font-size: 20px;
+  }
+  
+  h2 {
+    font-size: 18px;
+  }
+}

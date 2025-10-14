@@ -995,6 +995,16 @@ function handleActivityCompleted(data) {
   updateActivityState(data.activityId)
   updateActiveActivitiesPanel()
   checkForUnlocks()
+
+  // Spawn particle effects
+  if (data.outputs) {
+    Object.entries(data.outputs).forEach(([resourceId, amount]) => {
+      const resource = resources[resourceId]
+      if (resource) {
+        spawnParticle(resource.icon)
+      }
+    })
+  }
 }
 
 function handleActivityStarted(data) {
@@ -1143,6 +1153,24 @@ function showNotification(message) {
     notification.classList.add('fade-out')
     setTimeout(() => notification.remove(), 500)
   }, 3000)
+}
+
+function spawnParticle(icon) {
+  const particle = document.createElement('div')
+  particle.className = 'particle'
+  particle.textContent = icon
+
+  // Random position near center of screen
+  const x = window.innerWidth / 2 + (Math.random() - 0.5) * 200
+  const y = window.innerHeight / 2 + (Math.random() - 0.5) * 200
+
+  particle.style.left = `${x}px`
+  particle.style.top = `${y}px`
+
+  document.body.appendChild(particle)
+
+  // Remove after animation
+  setTimeout(() => particle.remove(), 1500)
 }
 
 function saveGame() {

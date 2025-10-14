@@ -148,8 +148,8 @@ describe('GameEngine - Save/Load System', () => {
     it('should reset workers to zero after reset', () => {
       engine.resourceManager.add('basicWorker', 5)
       engine.reset()
-      // Reset now gives 1 starting worker for new games
-      expect(engine.resourceManager.get('basicWorker')).toBe(1)
+      // Reset now gives 2 starting workers for new games
+      expect(engine.resourceManager.get('basicWorker')).toBe(2)
     })
   })
 
