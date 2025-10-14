@@ -80,6 +80,8 @@ export class ActivityManager {
       const newProgress = elapsed / state.duration
 
       if (newProgress >= 1) {
+        // Set progress to exactly 1 so UI shows 100% before completing
+        state.progress = 1
         // Activity completed
         completed.push(activityId)
       } else {
