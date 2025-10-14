@@ -8,7 +8,7 @@ This guide will help you deploy your clicker game to GitHub Pages for free!
 
 ```bash
 # If you haven't already, create a repo on GitHub and push your code
-git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git
+git remote add origin https://github.com/ZiggyGameDev/Capitalism-Simulator.git
 git push -u origin master
 ```
 
@@ -25,7 +25,7 @@ git push -u origin master
 - Go to the **Actions** tab in your repository
 - You should see the "Deploy to GitHub Pages" workflow running
 - Wait for it to complete (usually 1-2 minutes)
-- Your site will be live at: `https://YOUR-USERNAME.github.io/YOUR-REPO-NAME/`
+- Your site will be live at: `https://ziggygamedev.github.io/Capitalism-Simulator/`
 
 ## Manual Deployment (Alternative)
 
@@ -64,7 +64,7 @@ cd dist
 git init
 git add -A
 git commit -m 'Deploy'
-git push -f git@github.com:YOUR-USERNAME/YOUR-REPO-NAME.git main:gh-pages
+git push -f git@github.com:ZiggyGameDev/Capitalism-Simulator.git main:gh-pages
 ```
 
 ### Step 4: Configure GitHub Pages
@@ -79,7 +79,7 @@ git push -f git@github.com:YOUR-USERNAME/YOUR-REPO-NAME.git main:gh-pages
 
 After deployment completes, your game will be available at:
 
-**https://YOUR-USERNAME.github.io/YOUR-REPO-NAME/**
+**https://ziggygamedev.github.io/Capitalism-Simulator/**
 
 ## 📝 Notes
 
