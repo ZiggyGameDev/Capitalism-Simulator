@@ -8,6 +8,7 @@ A modern, feature-rich incremental/idle game built with vanilla JavaScript follo
 - **5 Skills** with unique progression paths
 - **14 Activities** with time-based completion
 - **15 Currency Types** - everything is a currency (no inventory complexity)
+- **12 Upgrades** - boost speed, outputs, or reduce costs
 - **Auto-Mode** for hands-free grinding
 - **Offline Progress** - earn resources while away (up to 8 hours)
 - **Save/Load System** with localStorage persistence
@@ -21,12 +22,13 @@ A modern, feature-rich incremental/idle game built with vanilla JavaScript follo
 - 🐕 **Dog Handling** - Find and train dogs
 
 ### Technical Excellence
-- ✅ **127 Unit Tests** with 100% pass rate
+- ✅ **155 Unit Tests** with 100% pass rate
 - ✅ **Test-Driven Development** throughout
 - ✅ **Event-Driven Architecture** with pub/sub
 - ✅ **Separation of Concerns** - clean architecture
 - ✅ **Real-Time Updates** with game loop
 - ✅ **Offline Progress** - up to 8 hours simulation
+- ✅ **Upgrade System** - 3 types with prerequisites
 - ✅ **Responsive Design** - works on mobile
 
 ## 🚀 Getting Started
@@ -87,14 +89,15 @@ npm run test:e2e
 ## 📊 Test Coverage
 
 ```
-Test Files: 6 passed (6)
-Tests:      127 passed (127)
+Test Files: 7 passed (7)
+Tests:      155 passed (155)
 
 ✅ XP Calculations (17 tests)
 ✅ EventBus (10 tests)
 ✅ CurrencyManager (29 tests)
 ✅ SkillManager (25 tests)
 ✅ ActivityManager (33 tests)
+✅ UpgradeManager (28 tests)
 ✅ Offline Progress (13 tests)
 ```
 
@@ -125,6 +128,13 @@ Tests:      127 passed (127)
 - Update activities with deltaTime
 - Handle completion and rewards
 - Support auto-mode
+- Apply upgrade effects to duration, costs, and outputs
+
+**UpgradeManager** - Permanent improvements
+- Purchase upgrades with currency
+- Speed boosts (reduce duration)
+- Output bonuses (increase rewards)
+- Cost reduction (reduce inputs)
 
 ### File Structure
 
@@ -203,7 +213,7 @@ export const currencies = {
 ## 📈 Future Enhancements
 
 - [x] ~~Offline progress calculation~~ ✅ Completed!
-- [ ] Upgrade system for boosting activities
+- [x] ~~Upgrade system for boosting activities~~ ✅ Completed!
 - [ ] More skills (Smithing, Crafting, Alchemy, Trading)
 - [ ] Achievement system
 - [ ] Prestige/rebirth mechanics
