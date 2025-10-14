@@ -3,12 +3,13 @@
  * Handles starting, updating, completing, and auto-mode
  */
 export class ActivityManager {
-  constructor(activityDefinitions, currencyManager, skillManager, eventBus, upgradeManager = null) {
+  constructor(activityDefinitions, currencyManager, skillManager, eventBus, upgradeManager = null, workerManager = null) {
     this.activityDefinitions = activityDefinitions || []
     this.currencyManager = currencyManager
     this.skillManager = skillManager
     this.eventBus = eventBus
     this.upgradeManager = upgradeManager
+    this.workerManager = workerManager
     this.activeActivities = new Map()
   }
 
@@ -201,7 +202,7 @@ export class ActivityManager {
   }
 
   /**
-   * Get effective duration with speed upgrades applied
+   * Get effective duration with speed upgrades and worker automation applied
    * @param {string} activityId - Activity identifier
    * @returns {number} Effective duration in seconds
    */
@@ -211,9 +212,16 @@ export class ActivityManager {
 
     let duration = activity.duration
 
+    // Apply upgrade speed multiplier (faster = lower duration)
     if (this.upgradeManager) {
       const speedMultiplier = this.upgradeManager.getSpeedMultiplier(activityId)
       duration = duration * speedMultiplier
+    }
+
+    // Apply worker speed multiplier (workers slower = higher duration)
+    if (this.workerManager) {
+      const workerSpeedMultiplier = this.workerManager.getSpeedMultiplier(activityId)
+      duration = duration / workerSpeedMultiplier
     }
 
     return duration

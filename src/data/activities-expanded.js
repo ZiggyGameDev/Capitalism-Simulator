@@ -1,0 +1,354 @@
+/**
+ * Expanded activity definitions - The Automation of Everything
+ * Tech tree showing humanity's replacement by machines
+ */
+
+export const activities = [
+  // ========== FARMING: Human Agricultural Labor ==========
+  {
+    id: 'plantWheat',
+    name: 'Plant Wheat by Hand',
+    skillId: 'farming',
+    levelRequired: 1,
+    inputs: {},
+    outputs: { wheat: 1 },
+    duration: 3,
+    xpGained: 5,
+    description: 'Back-breaking manual labor in the fields'
+  },
+  {
+    id: 'plantCorn',
+    name: 'Plant Corn',
+    skillId: 'farming',
+    levelRequired: 3,
+    inputs: {},
+    outputs: { corn: 1 },
+    duration: 3,
+    xpGained: 6,
+    description: 'Subsistence farming'
+  },
+  {
+    id: 'growTomatoes',
+    name: 'Grow Tomatoes',
+    skillId: 'farming',
+    levelRequired: 5,
+    inputs: { water: 1 },
+    outputs: { tomato: 2 },
+    duration: 4,
+    xpGained: 8,
+    description: 'Small-scale vegetable cultivation'
+  },
+  {
+    id: 'harvestPotatoes',
+    name: 'Harvest Potatoes',
+    skillId: 'farming',
+    levelRequired: 8,
+    inputs: { water: 2 },
+    outputs: { potato: 3 },
+    duration: 4,
+    xpGained: 10,
+    description: 'Digging in the dirt for sustenance'
+  },
+
+  // ========== GATHERING: Raw Resource Extraction ==========
+  {
+    id: 'chopWood',
+    name: 'Chop Wood',
+    skillId: 'gathering',
+    levelRequired: 1,
+    inputs: {},
+    outputs: { wood: 1 },
+    duration: 2,
+    xpGained: 4,
+    description: 'Manual forestry'
+  },
+  {
+    id: 'mineStone',
+    name: 'Mine Stone',
+    skillId: 'gathering',
+    levelRequired: 1,
+    inputs: {},
+    outputs: { stone: 1 },
+    duration: 3,
+    xpGained: 5,
+    description: 'Breaking rocks with primitive tools'
+  },
+  {
+    id: 'fetchWater',
+    name: 'Fetch Water',
+    skillId: 'gathering',
+    levelRequired: 1,
+    inputs: {},
+    outputs: { water: 2 },
+    duration: 2,
+    xpGained: 3,
+    description: 'Carrying buckets from the well'
+  },
+
+  // ========== CRAFTING: Artisan Production ==========
+  {
+    id: 'craftStoneTools',
+    name: 'Craft Stone Tools',
+    skillId: 'crafting',
+    levelRequired: 1,
+    inputs: { stone: 2, wood: 1 },
+    outputs: { stoneTools: 1 },
+    duration: 5,
+    xpGained: 8,
+    description: 'Primitive tool making'
+  },
+  {
+    id: 'sawPlanks',
+    name: 'Saw Planks',
+    skillId: 'crafting',
+    levelRequired: 5,
+    inputs: { wood: 3, stoneTools: 1 },
+    outputs: { woodenPlank: 4, stoneTools: 1 },
+    duration: 4,
+    xpGained: 10,
+    description: 'Skilled carpentry - soon to be obsolete'
+  },
+  {
+    id: 'smeltIron',
+    name: 'Smelt Iron',
+    skillId: 'crafting',
+    levelRequired: 10,
+    inputs: { stone: 5, coal: 2 },
+    outputs: { iron: 1 },
+    duration: 6,
+    xpGained: 15,
+    description: 'Metallurgy - the beginning of the end'
+  },
+
+  // ========== MANUFACTURING: The Industrial Revolution ==========
+  {
+    id: 'millFlour',
+    name: 'Mill Flour (Factory)',
+    skillId: 'manufacturing',
+    levelRequired: 1,
+    inputs: { wheat: 5, machine: 1 },
+    outputs: { flour: 8, machine: 1 },
+    duration: 3,
+    xpGained: 12,
+    description: 'Machines do what 10 workers once did'
+  },
+  {
+    id: 'processFood',
+    name: 'Process Food',
+    skillId: 'manufacturing',
+    levelRequired: 5,
+    inputs: { corn: 3, tomato: 2, machine: 1 },
+    outputs: { processedFood: 6, machine: 1 },
+    duration: 4,
+    xpGained: 15,
+    description: 'Mass production of sustenance'
+  },
+  {
+    id: 'forgeSteel',
+    name: 'Forge Steel',
+    skillId: 'manufacturing',
+    levelRequired: 10,
+    inputs: { iron: 3, coal: 2 },
+    outputs: { steel: 2 },
+    duration: 5,
+    xpGained: 18,
+    description: 'The backbone of industry'
+  },
+  {
+    id: 'assembleEquipment',
+    name: 'Assemble Equipment',
+    skillId: 'manufacturing',
+    levelRequired: 15,
+    inputs: { steel: 4, woodenPlank: 2 },
+    outputs: { equipment: 2 },
+    duration: 6,
+    xpGained: 20,
+    description: 'Tools that make tools'
+  },
+
+  // ========== ENGINEERING: Building the Machines ==========
+  {
+    id: 'buildMachine',
+    name: 'Build Machine',
+    skillId: 'engineering',
+    levelRequired: 1,
+    inputs: { iron: 10, steel: 5, equipment: 2 },
+    outputs: { machine: 1 },
+    duration: 8,
+    xpGained: 25,
+    description: 'Creating your replacement'
+  },
+  {
+    id: 'refineSteel',
+    name: 'Refine Steel',
+    skillId: 'engineering',
+    levelRequired: 10,
+    inputs: { iron: 5, coal: 3, machine: 1 },
+    outputs: { steel: 6, machine: 1 },
+    duration: 4,
+    xpGained: 22,
+    description: 'Machines making materials for machines'
+  },
+  {
+    id: 'produceCircuits',
+    name: 'Produce Circuits',
+    skillId: 'engineering',
+    levelRequired: 20,
+    inputs: { steel: 3, plastic: 2 },
+    outputs: { circuit: 2 },
+    duration: 5,
+    xpGained: 30,
+    description: 'The brain of automation'
+  },
+
+  // ========== AUTOMATION: Humans Need Not Apply ==========
+  {
+    id: 'extractPlastic',
+    name: 'Extract Plastic',
+    skillId: 'automation',
+    levelRequired: 1,
+    inputs: { coal: 5 },
+    outputs: { plastic: 3 },
+    duration: 4,
+    xpGained: 20,
+    description: 'Petroleum byproducts everywhere'
+  },
+  {
+    id: 'manufactureElectronics',
+    name: 'Manufacture Electronics',
+    skillId: 'automation',
+    levelRequired: 5,
+    inputs: { circuit: 2, plastic: 3, steel: 2 },
+    outputs: { electronics: 2 },
+    duration: 6,
+    xpGained: 35,
+    description: 'Automated assembly lines'
+  },
+  {
+    id: 'buildRoboticWorker',
+    name: 'Build Robotic Worker',
+    skillId: 'automation',
+    levelRequired: 15,
+    inputs: { electronics: 5, steel: 10, circuit: 5 },
+    outputs: { roboticWorker: 1 },
+    duration: 10,
+    xpGained: 50,
+    description: 'Your perfect replacement - no unions'
+  },
+  {
+    id: 'assembleDrone',
+    name: 'Assemble Drone',
+    skillId: 'automation',
+    levelRequired: 20,
+    inputs: { electronics: 3, plastic: 4, circuit: 3 },
+    outputs: { drone: 1 },
+    duration: 8,
+    xpGained: 45,
+    description: 'Autonomous labor units'
+  },
+  {
+    id: 'convertWorkersToUnits',
+    name: 'Convert Workers to Units',
+    skillId: 'automation',
+    levelRequired: 10,
+    inputs: { workerUnit: 10 },
+    outputs: { roboticWorker: 1 },
+    duration: 5,
+    xpGained: 40,
+    description: 'Humans are fungible resources'
+  },
+
+  // ========== COMPUTING: Digital Supremacy ==========
+  {
+    id: 'collectData',
+    name: 'Harvest Data',
+    skillId: 'computing',
+    levelRequired: 1,
+    inputs: { electronics: 2 },
+    outputs: { data: 10 },
+    duration: 3,
+    xpGained: 25,
+    description: 'Surveillance as a service'
+  },
+  {
+    id: 'developAlgorithm',
+    name: 'Develop Algorithm',
+    skillId: 'computing',
+    levelRequired: 10,
+    inputs: { data: 20, circuit: 3 },
+    outputs: { algorithm: 1 },
+    duration: 8,
+    xpGained: 50,
+    description: 'Automating thought itself'
+  },
+  {
+    id: 'trainAI',
+    name: 'Train AI Core',
+    skillId: 'computing',
+    levelRequired: 20,
+    inputs: { data: 50, algorithm: 5, electronics: 10 },
+    outputs: { aiCore: 1 },
+    duration: 12,
+    xpGained: 100,
+    description: 'Creating synthetic minds'
+  },
+
+  // ========== RESEARCH: Even Innovation is Automated ==========
+  {
+    id: 'developNanobots',
+    name: 'Develop Nanobots',
+    skillId: 'research',
+    levelRequired: 1,
+    inputs: { electronics: 10, algorithm: 3 },
+    outputs: { nanobot: 5 },
+    duration: 10,
+    xpGained: 75,
+    description: 'Molecular-scale automation'
+  },
+  {
+    id: 'buildQuantumProcessor',
+    name: 'Build Quantum Processor',
+    skillId: 'research',
+    levelRequired: 15,
+    inputs: { circuit: 20, aiCore: 2, nanobot: 10 },
+    outputs: { quantumProcessor: 1 },
+    duration: 15,
+    xpGained: 150,
+    description: 'Computing beyond human understanding'
+  },
+  {
+    id: 'digitizeConsciousness',
+    name: 'Digitize Consciousness',
+    skillId: 'research',
+    levelRequired: 25,
+    inputs: { workerUnit: 100, aiCore: 5, quantumProcessor: 2 },
+    outputs: { consciousness: 1 },
+    duration: 20,
+    xpGained: 200,
+    description: 'The final commodification'
+  },
+
+  // ========== SINGULARITY: The End of History ==========
+  {
+    id: 'achieveSingularity',
+    name: 'Achieve Singularity',
+    skillId: 'singularity',
+    levelRequired: 1,
+    inputs: { consciousness: 10, aiCore: 50, quantumProcessor: 20, nanobot: 100 },
+    outputs: { singularity: 1 },
+    duration: 30,
+    xpGained: 1000,
+    description: 'Humanity was merely the bootstrap'
+  },
+  {
+    id: 'transcend',
+    name: 'Transcend Material Form',
+    skillId: 'singularity',
+    levelRequired: 10,
+    inputs: { singularity: 1, consciousness: 100, quantumProcessor: 50 },
+    outputs: { singularity: 5 },
+    duration: 25,
+    xpGained: 2000,
+    description: 'Beyond flesh, beyond meaning, beyond purpose'
+  }
+]

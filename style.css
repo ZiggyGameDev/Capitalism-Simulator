@@ -497,6 +497,132 @@ body {
   cursor: not-allowed;
 }
 
+/* Worker Panel */
+.worker-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.worker-panel h3 {
+  margin-bottom: 15px;
+  color: #667eea;
+  font-size: 18px;
+}
+
+.worker-hire {
+  margin-bottom: 15px;
+}
+
+.hire-worker-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #4caf50;
+  color: white;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.hire-worker-btn:hover {
+  background: #45a049;
+}
+
+.worker-stats {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.worker-stat {
+  flex: 1;
+  background: #f0f4ff;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  border: 2px solid #667eea;
+}
+
+.worker-assignments-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #667eea;
+}
+
+.worker-assignments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.worker-assignment-item {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px;
+  border: 2px solid #dee2e6;
+}
+
+.worker-assignment-name {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.worker-assignment-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.worker-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  background: #667eea;
+  color: white;
+  transition: all 0.2s;
+}
+
+.worker-btn:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.worker-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.worker-count {
+  min-width: 30px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.worker-count.automated {
+  color: #4caf50;
+}
+
+.worker-automated-label {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #4caf50;
+  text-align: center;
+  font-weight: 600;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .game-main {

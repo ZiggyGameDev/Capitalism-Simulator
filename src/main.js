@@ -1,7 +1,7 @@
 import { GameEngine } from './core/GameEngine.js'
-import { skills } from './data/skills.js'
-import { activities } from './data/activities.js'
-import { currencies } from './data/currencies.js'
+import { skills } from './data/skills-expanded.js'
+import { activities } from './data/activities-expanded.js'
+import { currencies } from './data/currencies-expanded.js'
 import { upgrades } from './data/upgrades.js'
 
 // Initialize game
@@ -21,6 +21,7 @@ function init() {
   renderCurrencyTicker()
   renderActiveActivities()
   renderUpgrades()
+  renderWorkerPanel()
 
   // Subscribe to game events
   game.on('activity:completed', handleActivityCompleted)
@@ -31,6 +32,9 @@ function init() {
   game.on('game:tick', handleGameTick)
   game.on('game:offlineProgress', handleOfflineProgress)
   game.on('upgrade:purchased', handleUpgradePurchased)
+  game.on('worker:added', handleWorkerChanged)
+  game.on('worker:assigned', handleWorkerChanged)
+  game.on('worker:unassigned', handleWorkerChanged)
 
   // Start game
   game.start()
@@ -219,6 +223,7 @@ function renderActiveActivities() {
 
 function updateCurrencyTicker() {
   renderCurrencyTicker()
+  renderWorkerPanel()  // Update hire button if workerUnit changed
 }
 
 function handleActivityCompleted(data) {
@@ -345,6 +350,104 @@ function renderUpgrades() {
   })
 }
 
+function renderWorkerPanel() {
+  const container = document.getElementById('workerPanel')
+  const totalWorkers = game.workerManager.totalWorkers
+  const availableWorkers = game.workerManager.getAvailableWorkers()
+  const workerUnits = game.currencyManager.get('workerUnit') || 0
+
+  // Show hire button if we have workerUnit currency
+  let hireButtonHtml = ''
+  if (workerUnits > 0) {
+    hireButtonHtml = `
+      <div class="worker-hire">
+        <button class="hire-worker-btn" id="hireWorkerBtn">
+          👤 Hire Worker (${workerUnits} available)
+        </button>
+      </div>
+    `
+  }
+
+  if (totalWorkers === 0 && workerUnits === 0) {
+    container.innerHTML = '<div class="no-activities">No workers yet - produce workerUnit currency!</div>'
+    return
+  }
+
+  container.innerHTML = `
+    ${hireButtonHtml}
+    <div class="worker-stats">
+      <div class="worker-stat">Total: ${totalWorkers}</div>
+      <div class="worker-stat">Available: ${availableWorkers}</div>
+    </div>
+    <div class="worker-assignments-title">Assignments:</div>
+    <div class="worker-assignments"></div>
+  `
+
+  // Add hire button event listener
+  const hireBtn = container.querySelector('#hireWorkerBtn')
+  if (hireBtn) {
+    hireBtn.addEventListener('click', () => {
+      const units = game.currencyManager.get('workerUnit') || 0
+      if (units > 0) {
+        game.currencyManager.spend('workerUnit', 1)
+        game.workerManager.addWorkers(1)
+        showNotification('👤 Hired 1 worker!')
+      }
+    })
+  }
+
+  const assignmentsContainer = container.querySelector('.worker-assignments')
+
+  // Show all unlocked activities for current skill
+  const skillActivities = activities.filter(a => a.skillId === selectedSkill)
+  const unlockedActivities = skillActivities.filter(a => game.skillManager.isActivityUnlocked(a.id))
+
+  if (unlockedActivities.length === 0) {
+    assignmentsContainer.innerHTML = '<div class="no-activities">Unlock activities to assign workers</div>'
+    return
+  }
+
+  unlockedActivities.forEach(activity => {
+    const assigned = game.workerManager.getAssignment(activity.id)
+    const isAutomated = game.workerManager.isAutomated(activity.id)
+
+    const assignmentDiv = document.createElement('div')
+    assignmentDiv.className = 'worker-assignment-item'
+    assignmentDiv.innerHTML = `
+      <div class="worker-assignment-name">${activity.name}</div>
+      <div class="worker-assignment-controls">
+        <button class="worker-btn worker-btn-minus" data-activity="${activity.id}" ${assigned === 0 ? 'disabled' : ''}>-</button>
+        <span class="worker-count ${isAutomated ? 'automated' : ''}">${assigned}</span>
+        <button class="worker-btn worker-btn-plus" data-activity="${activity.id}" ${availableWorkers === 0 ? 'disabled' : ''}>+</button>
+      </div>
+      ${isAutomated ? '<div class="worker-automated-label">🤖 Automated (0.5x speed)</div>' : ''}
+    `
+
+    // Add event listeners
+    const minusBtn = assignmentDiv.querySelector('.worker-btn-minus')
+    const plusBtn = assignmentDiv.querySelector('.worker-btn-plus')
+
+    minusBtn.addEventListener('click', () => {
+      if (assigned > 0) {
+        game.workerManager.assign(activity.id, assigned - 1)
+      }
+    })
+
+    plusBtn.addEventListener('click', () => {
+      if (availableWorkers > 0) {
+        game.workerManager.assign(activity.id, assigned + 1)
+      }
+    })
+
+    assignmentsContainer.appendChild(assignmentDiv)
+  })
+}
+
+function handleWorkerChanged() {
+  renderWorkerPanel()
+  renderActivityList(selectedSkill)  // Update to show automated activities
+}
+
 function showNotification(message) {
   const notification = document.createElement('div')
   notification.className = 'notification'
@@ -374,6 +477,7 @@ function loadGame() {
       renderCurrencyTicker()
       renderActiveActivities()
       renderUpgrades()
+      renderWorkerPanel()
       showNotification('📂 Game loaded!')
     } catch (e) {
       console.error('Failed to load game:', e)
@@ -390,6 +494,7 @@ function resetGame() {
     renderCurrencyTicker()
     renderActiveActivities()
     renderUpgrades()
+    renderWorkerPanel()
     showNotification('🔄 Game reset!')
   }
 }

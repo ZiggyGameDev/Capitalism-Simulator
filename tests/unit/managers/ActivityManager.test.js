@@ -324,4 +324,70 @@ describe('ActivityManager', () => {
       expect(am.getActivityInfo('invalid')).toBeNull()
     })
   })
+
+  describe('Worker Integration', () => {
+    let workerManager
+
+    beforeEach(async () => {
+      const { WorkerManager } = await import('../../../src/managers/WorkerManager.js')
+      workerManager = new WorkerManager(eventBus)
+      // Create new ActivityManager with workerManager
+      am = new ActivityManager(activities, cm, sm, eventBus, null, workerManager)
+    })
+
+    describe('getEffectiveDuration with workers', () => {
+      it('should return normal duration when no workers assigned', () => {
+        const duration = am.getEffectiveDuration('chopTree')
+        expect(duration).toBe(2)  // Base duration
+      })
+
+      it('should double duration when workers assigned (half speed)', () => {
+        workerManager.addWorkers(5)
+        workerManager.assign('chopTree', 3)
+
+        const duration = am.getEffectiveDuration('chopTree')
+        expect(duration).toBe(4)  // 2 / 0.5 = 4 (twice as long)
+      })
+
+      it('should return normal duration when workers unassigned', () => {
+        workerManager.addWorkers(5)
+        workerManager.assign('chopTree', 3)
+        workerManager.unassign('chopTree')
+
+        const duration = am.getEffectiveDuration('chopTree')
+        expect(duration).toBe(2)  // Back to normal
+      })
+    })
+
+    describe('Activity completion with workers', () => {
+      it('should take twice as long with workers assigned', () => {
+        workerManager.addWorkers(5)
+        workerManager.assign('chopTree', 3)
+
+        am.start('chopTree')
+        am.update(2000)  // Normal duration
+
+        // Should not be complete yet (needs 4 seconds with workers)
+        expect(am.getActiveActivities()).toHaveLength(1)
+        expect(am.getProgress('chopTree')).toBeCloseTo(0.5, 2)
+
+        am.update(2000)  // Another 2 seconds = 4 total
+
+        // Now should be complete
+        expect(am.getActiveActivities()).toHaveLength(0)
+        expect(cm.get('wood')).toBe(1)
+      })
+
+      it('should grant same outputs regardless of workers', () => {
+        workerManager.addWorkers(5)
+        workerManager.assign('chopTree', 3)
+
+        am.start('chopTree')
+        am.update(4000)  // Full worker duration
+
+        expect(cm.get('wood')).toBe(1)  // Same output
+        expect(sm.getXP('woodcutting')).toBe(5)  // Same XP
+      })
+    })
+  })
 })
