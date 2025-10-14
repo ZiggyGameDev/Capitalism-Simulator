@@ -27,6 +27,7 @@ function init() {
   game.on('skill:levelup', handleSkillLevelup)
   game.on('currency:changed', updateCurrencyTicker)
   game.on('game:tick', handleGameTick)
+  game.on('game:offlineProgress', handleOfflineProgress)
 
   // Start game
   game.start()
@@ -248,6 +249,21 @@ function handleGameTick(data) {
     // Update the currently selected skill's activity list to show progress
     renderActivityList(selectedSkill)
   }
+}
+
+function handleOfflineProgress(data) {
+  const timeInSeconds = Math.floor(data.totalTime / 1000)
+  const minutes = Math.floor(timeInSeconds / 60)
+  const seconds = timeInSeconds % 60
+
+  const timeString = minutes > 0
+    ? `${minutes}m ${seconds}s`
+    : `${seconds}s`
+
+  const currencyCount = Object.keys(data.currenciesEarned).length
+  const activitiesCount = data.activitiesCompleted.reduce((sum, a) => sum + a.completions, 0)
+
+  showNotification(`⏰ Welcome back! While offline (${timeString}): ${activitiesCount} activities completed, ${currencyCount} currencies earned!`)
 }
 
 function showNotification(message) {
