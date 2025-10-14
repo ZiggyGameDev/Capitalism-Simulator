@@ -14,7 +14,7 @@ export const skills = [
   {
     id: 'gathering',
     name: 'Gathering',
-    icon: '🫴',
+    icon: '🌲',
     description: 'Collecting raw materials by hand'
   },
   {
