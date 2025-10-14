@@ -206,6 +206,11 @@ function renderActivityList(skillId) {
         const workerTypeId = btn.dataset.worker
         const current = game.workerManager.getAssignment(activityId, workerTypeId)
         if (current > 0) {
+          // Update immediately for instant feedback
+          const countSpan = btn.parentElement.querySelector('.worker-count')
+          if (countSpan) {
+            countSpan.textContent = current - 1
+          }
           game.workerManager.assign(activityId, workerTypeId, current - 1)
         }
       })
@@ -218,6 +223,11 @@ function renderActivityList(skillId) {
         const current = game.workerManager.getAssignment(activityId, workerTypeId)
         const available = game.workerManager.getAvailableWorkers(workerTypeId)
         if (available > 0) {
+          // Update immediately for instant feedback
+          const countSpan = btn.parentElement.querySelector('.worker-count')
+          if (countSpan) {
+            countSpan.textContent = current + 1
+          }
           game.workerManager.assign(activityId, workerTypeId, current + 1)
         }
       })
@@ -226,6 +236,11 @@ function renderActivityList(skillId) {
     if (removeAllButton) {
       removeAllButton.addEventListener('click', () => {
         const activityId = removeAllButton.dataset.activity
+        // Update all counts to 0 immediately for instant feedback
+        const workerCounts = activityDiv.querySelectorAll('.worker-count')
+        workerCounts.forEach(count => {
+          count.textContent = '0'
+        })
         game.workerManager.unassignAll(activityId)
       })
     }
@@ -445,8 +460,15 @@ function renderWorkerPanel() {
 }
 
 function handleWorkerChanged() {
-  renderWorkerPanel()
-  renderActivityList(selectedSkill)  // Update to show automated activities
+  // Debounce the re-render to avoid UI flickering during rapid clicks
+  if (handleWorkerChanged.timeout) {
+    clearTimeout(handleWorkerChanged.timeout)
+  }
+
+  handleWorkerChanged.timeout = setTimeout(() => {
+    renderWorkerPanel()
+    renderActivityList(selectedSkill)  // Update to show automated activities
+  }, 50)  // Short delay to batch rapid clicks
 }
 
 function showNotification(message) {
