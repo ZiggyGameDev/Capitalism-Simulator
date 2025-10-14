@@ -1,59 +1,80 @@
+import { workerTypes, speedBoosts } from '../data/workerTypes.js'
+
 /**
- * Manages workers - automation that replaces human labor
- * Workers run activities at half speed automatically
+ * Manages workers - automation that runs activities automatically
+ * Supports multiple worker types with different speeds
+ * Supports speed boosts from consumable resources
  */
 export class WorkerManager {
-  constructor(eventBus) {
+  constructor(eventBus, currencyManager = null) {
     this.eventBus = eventBus
-    this.totalWorkers = 0
-    this.assignments = {} // { activityId: workerCount }
+    this.currencyManager = currencyManager
+    this.workerTypes = workerTypes
+    this.speedBoosts = speedBoosts
+
+    // { activityId: { workerTypeId: count } }
+    this.assignments = {}
+
+    // Active speed boosts { activityId: [boostIds] }
+    this.activeBoosts = {}
   }
 
   /**
-   * Add workers to total pool
+   * Get available workers of a specific type
    */
-  addWorkers(amount) {
-    this.totalWorkers += amount
+  getAvailableWorkers(workerTypeId) {
+    if (!this.currencyManager) return 0
 
-    if (this.eventBus) {
-      this.eventBus.emit('worker:added', {
-        amount,
-        totalWorkers: this.totalWorkers
-      })
+    const total = this.currencyManager.get(workerTypeId)
+    const assigned = this.getAssignedWorkers(workerTypeId)
+    return total - assigned
+  }
+
+  /**
+   * Get total assigned workers of a specific type across all activities
+   */
+  getAssignedWorkers(workerTypeId) {
+    let total = 0
+    for (const activityAssignments of Object.values(this.assignments)) {
+      total += activityAssignments[workerTypeId] || 0
     }
-  }
-
-  /**
-   * Get available unassigned workers
-   */
-  getAvailableWorkers() {
-    const assigned = Object.values(this.assignments).reduce((sum, count) => sum + count, 0)
-    return this.totalWorkers - assigned
+    return total
   }
 
   /**
    * Check if can assign workers to activity
    */
-  canAssign(activityId, workers) {
-    const currentAssignment = this.assignments[activityId] || 0
-    const available = this.getAvailableWorkers() + currentAssignment
-    return available >= workers
+  canAssign(activityId, workerTypeId, count) {
+    const currentAssignment = this.getAssignment(activityId, workerTypeId)
+    const available = this.getAvailableWorkers(workerTypeId) + currentAssignment
+    return available >= count
   }
 
   /**
    * Assign workers to activity
    */
-  assign(activityId, workers) {
-    if (!this.canAssign(activityId, workers)) {
-      throw new Error('Not enough available workers')
+  assign(activityId, workerTypeId, count) {
+    if (count === 0) {
+      // Unassign if count is 0
+      this.unassign(activityId, workerTypeId)
+      return
     }
 
-    this.assignments[activityId] = workers
+    if (!this.canAssign(activityId, workerTypeId, count)) {
+      throw new Error(`Not enough available workers of type ${workerTypeId}`)
+    }
+
+    if (!this.assignments[activityId]) {
+      this.assignments[activityId] = {}
+    }
+
+    this.assignments[activityId][workerTypeId] = count
 
     if (this.eventBus) {
       this.eventBus.emit('worker:assigned', {
         activityId,
-        workers
+        workerTypeId,
+        count
       })
     }
   }
@@ -61,47 +82,154 @@ export class WorkerManager {
   /**
    * Unassign workers from activity
    */
-  unassign(activityId) {
-    delete this.assignments[activityId]
+  unassign(activityId, workerTypeId) {
+    if (!this.assignments[activityId]) return
+
+    delete this.assignments[activityId][workerTypeId]
+
+    // Clean up empty activity assignments
+    if (Object.keys(this.assignments[activityId]).length === 0) {
+      delete this.assignments[activityId]
+    }
 
     if (this.eventBus) {
       this.eventBus.emit('worker:unassigned', {
-        activityId
+        activityId,
+        workerTypeId
       })
     }
   }
 
   /**
-   * Get workers assigned to activity
+   * Unassign all workers from activity
    */
-  getAssignment(activityId) {
-    return this.assignments[activityId] || 0
+  unassignAll(activityId) {
+    if (!this.assignments[activityId]) return
+
+    const workerTypeIds = Object.keys(this.assignments[activityId])
+    workerTypeIds.forEach(workerTypeId => {
+      this.unassign(activityId, workerTypeId)
+    })
   }
 
   /**
-   * Get speed multiplier for activity based on number of workers assigned
-   * More workers = faster (but still slower than manual)
-   * 1 worker = 0.2x speed (5x slower than manual)
-   * 10 workers = 0.67x speed (1.5x slower than manual)
-   * Formula: 0.2 + 0.5 * log10(workers), capped at 0.67
+   * Get workers assigned to activity for a specific type
    */
-  getSpeedMultiplier(activityId) {
-    const workerCount = this.assignments[activityId] || 0
+  getAssignment(activityId, workerTypeId) {
+    return this.assignments[activityId]?.[workerTypeId] || 0
+  }
 
-    if (workerCount === 0) {
-      return 1  // No workers = normal manual speed
+  /**
+   * Get all assignments for an activity
+   */
+  getActivityAssignments(activityId) {
+    return this.assignments[activityId] || {}
+  }
+
+  /**
+   * Get speed multiplier for activity based on assigned workers and boosts
+   * Returns the BEST speed among all assigned worker types (they work in parallel)
+   */
+  getSpeedMultiplier(activityId, activitySkillId = null) {
+    const assignments = this.assignments[activityId]
+    if (!assignments || Object.keys(assignments).length === 0) {
+      return 0  // No workers = no speed (activity doesn't run)
     }
 
-    // Logarithmic scaling: starts at 0.2 (very slow) and increases to 0.67 (less slow)
-    const speedMultiplier = Math.min(0.67, 0.2 + 0.5 * Math.log10(workerCount))
-    return speedMultiplier
+    // Calculate speed for each worker type and take the best
+    let bestSpeed = 0
+
+    for (const [workerTypeId, count] of Object.entries(assignments)) {
+      const workerType = this.workerTypes.find(wt => wt.id === workerTypeId)
+      if (!workerType || count === 0) continue
+
+      // Base speed from worker type
+      let speed = workerType.baseSpeed
+
+      // Bonus for specific activities (e.g., tractor on farming)
+      if (workerType.bonusActivities && activitySkillId) {
+        if (workerType.bonusActivities.includes(activitySkillId)) {
+          speed *= 1.5  // 50% bonus
+        }
+      }
+
+      // Logarithmic scaling for multiple workers of same type
+      // Formula: baseSpeed * (1 + 0.3 * log10(count))
+      if (count > 1) {
+        speed *= (1 + 0.3 * Math.log10(count))
+      }
+
+      // Apply active speed boosts
+      speed *= this.getSpeedBoostMultiplier(activityId, workerTypeId)
+
+      bestSpeed = Math.max(bestSpeed, speed)
+    }
+
+    // Cap at 1.0 (never faster than manual)
+    return Math.min(1.0, bestSpeed)
+  }
+
+  /**
+   * Get speed boost multiplier from active boosts
+   */
+  getSpeedBoostMultiplier(activityId, workerTypeId) {
+    if (!this.currencyManager) return 1.0
+
+    let multiplier = 1.0
+
+    // Check each speed boost
+    for (const boost of this.speedBoosts) {
+      // Check if this boost affects this worker type
+      if (!boost.workerTypes.includes(workerTypeId)) continue
+
+      // Check if we have the resource
+      if (this.currencyManager.get(boost.id) > 0) {
+        multiplier += boost.speedBonus
+      }
+    }
+
+    return multiplier
+  }
+
+  /**
+   * Consume speed boost resources for an activity completion
+   */
+  consumeSpeedBoosts(activityId) {
+    if (!this.currencyManager) return
+
+    const assignments = this.assignments[activityId]
+    if (!assignments) return
+
+    // Find which boosts are active
+    const activeBoosts = new Set()
+    for (const workerTypeId of Object.keys(assignments)) {
+      for (const boost of this.speedBoosts) {
+        if (boost.workerTypes.includes(workerTypeId)) {
+          if (this.currencyManager.get(boost.id) > 0) {
+            activeBoosts.add(boost.id)
+          }
+        }
+      }
+    }
+
+    // Consume each active boost
+    for (const boostId of activeBoosts) {
+      const boost = this.speedBoosts.find(b => b.id === boostId)
+      if (boost) {
+        const currentAmount = this.currencyManager.get(boostId)
+        const consumeAmount = Math.min(boost.consumptionRate, currentAmount)
+        this.currencyManager.spend(boostId, consumeAmount)
+      }
+    }
   }
 
   /**
    * Check if activity is automated by workers
    */
   isAutomated(activityId) {
-    return (this.assignments[activityId] || 0) > 0
+    const assignments = this.assignments[activityId]
+    if (!assignments) return false
+    return Object.values(assignments).some(count => count > 0)
   }
 
   /**
@@ -109,8 +237,7 @@ export class WorkerManager {
    */
   getState() {
     return {
-      totalWorkers: this.totalWorkers,
-      assignments: { ...this.assignments }
+      assignments: JSON.parse(JSON.stringify(this.assignments))
     }
   }
 
@@ -118,11 +245,8 @@ export class WorkerManager {
    * Load state
    */
   loadState(state) {
-    if (state.totalWorkers !== undefined) {
-      this.totalWorkers = state.totalWorkers
-    }
     if (state.assignments) {
-      this.assignments = { ...state.assignments }
+      this.assignments = JSON.parse(JSON.stringify(state.assignments))
     }
   }
 
@@ -130,7 +254,7 @@ export class WorkerManager {
    * Reset all workers
    */
   reset() {
-    this.totalWorkers = 0
     this.assignments = {}
+    this.activeBoosts = {}
   }
 }

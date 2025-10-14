@@ -243,3 +243,4 @@ Built following the design documents in `docs/`:
 - EXAMPLES.md - Skill/activity examples
 
 Developed with Claude Code using Test-Driven Development throughout.
+

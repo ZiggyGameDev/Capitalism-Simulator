@@ -94,28 +94,95 @@ function renderActivityList(skillId) {
 
   skillActivities.forEach(activity => {
     const unlocked = game.skillManager.isActivityUnlocked(activity.id)
-    const canStart = game.activityManager.canStart(activity.id)
     const isRunning = game.activityManager.getActiveActivities().some(a => a.activityId === activity.id)
     const progress = game.activityManager.getProgress(activity.id)
-    const activityState = game.activityManager.getActiveActivities().find(a => a.activityId === activity.id)
+    const isAutomated = game.workerManager.isAutomated(activity.id)
+    const workerAssignments = game.workerManager.getActivityAssignments(activity.id)
+
+    // Check if production is halted
+    const canRun = game.activityManager.canRun(activity.id)
+    const isHalted = isAutomated && !canRun
 
     const activityDiv = document.createElement('div')
-    activityDiv.className = `activity-item ${!unlocked ? 'locked' : ''} ${isRunning ? 'running' : ''}`
+    activityDiv.className = `activity-item ${!unlocked ? 'locked' : ''} ${isRunning ? 'running' : ''} ${isHalted ? 'halted' : ''}`
 
+    // Build inputs text with emojis and check if we can afford them
     const inputsText = Object.keys(activity.inputs).length === 0
-      ? 'FREE'
-      : Object.entries(activity.inputs).map(([id, amt]) => `${currencies[id].name} × ${amt}`).join(', ')
+      ? '<span class="free-label">FREE</span>'
+      : Object.entries(activity.inputs).map(([id, amt]) => {
+          const currency = currencies[id]
+          const currentAmount = game.currencyManager.get(id)
+          const canAfford = currentAmount >= amt
+          const className = !canAfford && isAutomated ? 'insufficient' : ''
+          return `<span class="${className}">${currency.icon} ${currency.name} × ${amt}</span>`
+        }).join(', ')
 
-    const outputsText = Object.entries(activity.outputs).map(([id, amt]) => `${currencies[id].name} × ${amt}`).join(', ')
+    // Build outputs text with emojis
+    const outputsText = Object.entries(activity.outputs).map(([id, amt]) => {
+      const currency = currencies[id]
+      return `${currency.icon} ${currency.name} × ${amt}`
+    }).join(', ')
+
+    // Build worker assignment HTML
+    let workerAssignmentHTML = ''
+    if (unlocked) {
+      workerAssignmentHTML = '<div class="activity-worker-assignments">'
+
+      // Add "Remove All Workers" button if any workers are assigned
+      const hasWorkersAssigned = Object.values(workerAssignments).some(count => count > 0)
+      if (hasWorkersAssigned) {
+        workerAssignmentHTML += `
+          <div class="worker-assignment-header">
+            <span class="worker-assignment-title">Assign Workers:</span>
+            <button class="worker-btn-remove-all" data-activity="${activity.id}" title="Remove all workers from this activity">Remove All</button>
+          </div>
+        `
+      } else {
+        workerAssignmentHTML += '<div class="worker-assignment-title">Assign Workers:</div>'
+      }
+
+      // Show assignments for each worker type that exists
+      let hasAnyWorkerControls = false
+      game.workerManager.workerTypes.forEach(workerType => {
+        const assigned = workerAssignments[workerType.id] || 0
+        const available = game.workerManager.getAvailableWorkers(workerType.id)
+        const total = game.currencyManager.get(workerType.id) || 0
+
+        // Show controls if you have this worker type OR if it's basic worker (always show for tutorial)
+        if (total > 0 || assigned > 0 || workerType.id === 'basicWorker') {
+          hasAnyWorkerControls = true
+          const canDecrease = assigned > 0
+          const canIncrease = available > 0
+
+          workerAssignmentHTML += `
+            <div class="worker-assignment-row">
+              <span class="worker-type-name">${currencies[workerType.id].icon} ${currencies[workerType.id].name} (${total})</span>
+              <div class="worker-controls">
+                <button class="worker-btn-minus" data-activity="${activity.id}" data-worker="${workerType.id}" ${!canDecrease ? 'disabled' : ''}>-</button>
+                <span class="worker-count">${assigned}</span>
+                <button class="worker-btn-plus" data-activity="${activity.id}" data-worker="${workerType.id}" ${!canIncrease ? 'disabled' : ''}>+</button>
+              </div>
+            </div>
+          `
+        }
+      })
+
+      if (!hasAnyWorkerControls) {
+        workerAssignmentHTML += '<div class="no-workers-hint">No workers available yet</div>'
+      }
+
+      workerAssignmentHTML += '</div>'
+    }
 
     activityDiv.innerHTML = `
       <div class="activity-header">
-        <div class="activity-name">${activity.name}</div>
+        <div class="activity-name">${activity.name} ${isAutomated ? '🤖' : ''}</div>
         <div class="activity-level">${unlocked ? '' : `🔒 Level ${activity.levelRequired}`}</div>
       </div>
       <div class="activity-info">
         ${inputsText} → ${outputsText}
       </div>
+      ${isHalted ? '<div class="activity-halted-warning">⚠️ Production halted - insufficient resources</div>' : ''}
       <div class="activity-meta">
         ${activity.duration}s | +${activity.xpGained} XP
       </div>
@@ -123,85 +190,48 @@ function renderActivityList(skillId) {
         <div class="activity-progress-bar">
           <div class="activity-progress-fill" style="width: ${progress * 100}%"></div>
         </div>
+        <div class="activity-status">${Math.floor(progress * 100)}%</div>
       ` : ''}
-      <div class="activity-buttons">
-        ${unlocked && !isRunning ? `
-          <button class="start-btn" ${!canStart ? 'disabled' : ''} data-activity="${activity.id}">
-            ${canStart ? '▶ Start' : '⏸ Cannot Start'}
-          </button>
-        ` : ''}
-        ${isRunning ? `
-          <button class="stop-btn" data-activity="${activity.id}">⏹ Stop</button>
-          <button class="auto-btn ${activityState.autoMode ? 'active' : ''}" data-activity="${activity.id}">
-            ${activityState.autoMode ? '🔁 Auto ON' : '🔁 Auto OFF'}
-          </button>
-        ` : ''}
-      </div>
+      ${workerAssignmentHTML}
     `
 
-    // Add event listeners
-    const startBtn = activityDiv.querySelector('.start-btn')
-    if (startBtn) {
-      startBtn.addEventListener('click', () => {
-        try {
-          game.activityManager.start(activity.id)
-          renderActivityList(selectedSkill)
-        } catch (e) {
-          console.error(e)
+    // Add event listeners for worker assignment buttons
+    const minusButtons = activityDiv.querySelectorAll('.worker-btn-minus')
+    const plusButtons = activityDiv.querySelectorAll('.worker-btn-plus')
+    const removeAllButton = activityDiv.querySelector('.worker-btn-remove-all')
+
+    minusButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const activityId = btn.dataset.activity
+        const workerTypeId = btn.dataset.worker
+        const current = game.workerManager.getAssignment(activityId, workerTypeId)
+        if (current > 0) {
+          game.workerManager.assign(activityId, workerTypeId, current - 1)
         }
       })
-    }
+    })
 
-    const stopBtn = activityDiv.querySelector('.stop-btn')
-    if (stopBtn) {
-      stopBtn.addEventListener('click', () => {
-        game.activityManager.stopActivity(activity.id)
-        renderActivityList(selectedSkill)
-        renderActiveActivities()
+    plusButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const activityId = btn.dataset.activity
+        const workerTypeId = btn.dataset.worker
+        const current = game.workerManager.getAssignment(activityId, workerTypeId)
+        const available = game.workerManager.getAvailableWorkers(workerTypeId)
+        if (available > 0) {
+          game.workerManager.assign(activityId, workerTypeId, current + 1)
+        }
       })
-    }
+    })
 
-    const autoBtn = activityDiv.querySelector('.auto-btn')
-    if (autoBtn) {
-      autoBtn.addEventListener('click', () => {
-        const currentState = game.activityManager.getActiveActivities().find(a => a.activityId === activity.id)
-        game.activityManager.setAutoMode(activity.id, !currentState.autoMode)
-        renderActivityList(selectedSkill)
+    if (removeAllButton) {
+      removeAllButton.addEventListener('click', () => {
+        const activityId = removeAllButton.dataset.activity
+        game.workerManager.unassignAll(activityId)
       })
     }
 
     container.appendChild(activityDiv)
   })
-
-  // Auto-start the first FREE activity if nothing is running for this skill
-  const hasActiveSkillActivities = game.activityManager.getActiveActivities()
-    .some(state => {
-      const activity = activities.find(a => a.id === state.activityId)
-      return activity && activity.skillId === skillId
-    })
-
-  if (!hasActiveSkillActivities) {
-    // Find first unlocked FREE activity
-    const firstFreeActivity = skillActivities.find(activity => {
-      const unlocked = game.skillManager.isActivityUnlocked(activity.id)
-      const isFree = Object.keys(activity.inputs).length === 0
-      const canStart = game.activityManager.canStart(activity.id)
-      return unlocked && isFree && canStart
-    })
-
-    if (firstFreeActivity) {
-      try {
-        game.activityManager.start(firstFreeActivity.id)
-        // Re-render to show the started activity
-        setTimeout(() => {
-          renderActivityList(selectedSkill)
-          renderActiveActivities()
-        }, 100)
-      } catch (e) {
-        console.error('Failed to auto-start activity:', e)
-      }
-    }
-  }
 }
 
 function renderCurrencyTicker() {
@@ -227,7 +257,7 @@ function renderActiveActivities() {
   container.innerHTML = '<h3>Active Activities</h3>'
 
   if (active.length === 0) {
-    container.innerHTML += '<div class="no-activities">No activities running</div>'
+    container.innerHTML += '<div class="no-activities">Assign workers to activities to start automation</div>'
     return
   }
 
@@ -238,12 +268,12 @@ function renderActiveActivities() {
     const div = document.createElement('div')
     div.className = 'active-activity-item'
     div.innerHTML = `
-      <div class="active-activity-name">${activity.name}</div>
+      <div class="active-activity-name">🤖 ${activity.name}</div>
       <div class="active-activity-progress-bar">
         <div class="active-activity-progress-fill" style="width: ${progress * 100}%"></div>
       </div>
       <div class="active-activity-status">
-        ${Math.floor(progress * 100)}% ${state.autoMode ? '🔁' : ''}
+        ${Math.floor(progress * 100)}%
       </div>
     `
 
@@ -382,95 +412,36 @@ function renderUpgrades() {
 
 function renderWorkerPanel() {
   const container = document.getElementById('workerPanel')
-  const totalWorkers = game.workerManager.totalWorkers
-  const availableWorkers = game.workerManager.getAvailableWorkers()
-  const workerUnits = game.currencyManager.get('workerUnit') || 0
 
-  // Show hire button if we have workerUnit currency
-  let hireButtonHtml = ''
-  if (workerUnits > 0) {
-    hireButtonHtml = `
-      <div class="worker-hire">
-        <button class="hire-worker-btn" id="hireWorkerBtn">
-          👤 Hire Worker (${workerUnits} available)
-        </button>
-      </div>
-    `
-  }
+  // Show worker summary
+  let workerSummaryHTML = '<h3>Workers</h3><div class="worker-summary">'
+  let hasWorkers = false
 
-  if (totalWorkers === 0 && workerUnits === 0) {
-    container.innerHTML = '<div class="no-activities">No workers yet - produce workerUnit currency!</div>'
-    return
-  }
+  game.workerManager.workerTypes.forEach(workerType => {
+    const total = game.currencyManager.get(workerType.id) || 0
+    const assigned = game.workerManager.getAssignedWorkers(workerType.id)
+    const available = total - assigned
 
-  container.innerHTML = `
-    ${hireButtonHtml}
-    <div class="worker-stats">
-      <div class="worker-stat">Total: ${totalWorkers}</div>
-      <div class="worker-stat">Available: ${availableWorkers}</div>
-    </div>
-    <div class="worker-assignments-title">Assignments:</div>
-    <div class="worker-assignments"></div>
-  `
-
-  // Add hire button event listener
-  const hireBtn = container.querySelector('#hireWorkerBtn')
-  if (hireBtn) {
-    hireBtn.addEventListener('click', () => {
-      const units = game.currencyManager.get('workerUnit') || 0
-      if (units > 0) {
-        game.currencyManager.spend('workerUnit', 1)
-        game.workerManager.addWorkers(1)
-        showNotification('👤 Hired 1 worker!')
-      }
-    })
-  }
-
-  const assignmentsContainer = container.querySelector('.worker-assignments')
-
-  // Show all unlocked activities for current skill
-  const skillActivities = activities.filter(a => a.skillId === selectedSkill)
-  const unlockedActivities = skillActivities.filter(a => game.skillManager.isActivityUnlocked(a.id))
-
-  if (unlockedActivities.length === 0) {
-    assignmentsContainer.innerHTML = '<div class="no-activities">Unlock activities to assign workers</div>'
-    return
-  }
-
-  unlockedActivities.forEach(activity => {
-    const assigned = game.workerManager.getAssignment(activity.id)
-    const isAutomated = game.workerManager.isAutomated(activity.id)
-
-    const assignmentDiv = document.createElement('div')
-    assignmentDiv.className = 'worker-assignment-item'
-    assignmentDiv.innerHTML = `
-      <div class="worker-assignment-name">${activity.name}</div>
-      <div class="worker-assignment-controls">
-        <button class="worker-btn worker-btn-minus" data-activity="${activity.id}" ${assigned === 0 ? 'disabled' : ''}>-</button>
-        <span class="worker-count ${isAutomated ? 'automated' : ''}">${assigned}</span>
-        <button class="worker-btn worker-btn-plus" data-activity="${activity.id}" ${availableWorkers === 0 ? 'disabled' : ''}>+</button>
-      </div>
-      ${isAutomated ? '<div class="worker-automated-label">🤖 Automated (0.5x speed)</div>' : ''}
-    `
-
-    // Add event listeners
-    const minusBtn = assignmentDiv.querySelector('.worker-btn-minus')
-    const plusBtn = assignmentDiv.querySelector('.worker-btn-plus')
-
-    minusBtn.addEventListener('click', () => {
-      if (assigned > 0) {
-        game.workerManager.assign(activity.id, assigned - 1)
-      }
-    })
-
-    plusBtn.addEventListener('click', () => {
-      if (availableWorkers > 0) {
-        game.workerManager.assign(activity.id, assigned + 1)
-      }
-    })
-
-    assignmentsContainer.appendChild(assignmentDiv)
+    if (total > 0) {
+      hasWorkers = true
+      workerSummaryHTML += `
+        <div class="worker-summary-item">
+          <span class="worker-summary-icon">${currencies[workerType.id].icon}</span>
+          <span class="worker-summary-name">${currencies[workerType.id].name}</span>
+          <span class="worker-summary-stats">${total} total (${assigned} assigned, ${available} available)</span>
+        </div>
+      `
+    }
   })
+
+  workerSummaryHTML += '</div>'
+
+  if (!hasWorkers) {
+    container.innerHTML = '<h3>Workers</h3><div class="no-activities">No workers yet - produce worker currencies to unlock automation!</div>'
+    return
+  }
+
+  container.innerHTML = workerSummaryHTML
 }
 
 function handleWorkerChanged() {

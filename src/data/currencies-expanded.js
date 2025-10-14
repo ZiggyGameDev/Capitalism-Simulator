@@ -38,6 +38,17 @@ export const currencies = {
   roboticWorker: { id: 'roboticWorker', name: 'Robotic Workers', icon: '🤖', description: 'No breaks, no complaints' },
   drone: { id: 'drone', name: 'Drones', icon: '🛸', description: 'Autonomous labor' },
 
+  // Worker types (automation labor)
+  basicWorker: { id: 'basicWorker', name: 'Basic Worker', icon: '👷', description: 'Human laborers' },
+  tractorWorker: { id: 'tractorWorker', name: 'Tractor Worker', icon: '🚜', description: 'Mechanized farm worker' },
+  droneWorker: { id: 'droneWorker', name: 'Drone Worker', icon: '🚁', description: 'AI-powered autonomous worker' },
+
+  // Speed boost resources
+  tv: { id: 'tv', name: 'TV', icon: '📺', description: 'Entertainment for workers' },
+  phone: { id: 'phone', name: 'Phone', icon: '📱', description: 'Communication devices' },
+  fastFood: { id: 'fastFood', name: 'Fast Food', icon: '🍔', description: 'Quick meals for energy' },
+  fuel: { id: 'fuel', name: 'Fuel', icon: '⛽', description: 'Powers machines' },
+
   // ========== PHASE 4: POST-HUMAN (AI Supremacy) ==========
   data: { id: 'data', name: 'Data', icon: '📊', description: 'The new oil' },
   algorithm: { id: 'algorithm', name: 'Algorithms', icon: '🧮', description: 'Automated decision making' },

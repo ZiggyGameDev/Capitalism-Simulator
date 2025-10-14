@@ -1,6 +1,6 @@
 /**
  * Manages time-based activities
- * Handles starting, updating, completing, and auto-mode
+ * Activities run ONLY when workers are assigned (no manual clicking)
  */
 export class ActivityManager {
   constructor(activityDefinitions, currencyManager, skillManager, eventBus, upgradeManager = null, workerManager = null) {
@@ -14,16 +14,18 @@ export class ActivityManager {
   }
 
   /**
-   * Check if an activity can be started
+   * Check if an activity can run (has workers and can afford inputs)
    * @param {string} activityId - Activity identifier
-   * @returns {boolean} True if can start
+   * @returns {boolean} True if can run
    */
-  canStart(activityId) {
+  canRun(activityId) {
     const activity = this.activityDefinitions.find(a => a.id === activityId)
     if (!activity) return false
 
-    // Check if already running
-    if (this.activeActivities.has(activityId)) return false
+    // Must have workers assigned
+    if (!this.workerManager || !this.workerManager.isAutomated(activityId)) {
+      return false
+    }
 
     // Check level requirement
     if (!this.skillManager.isActivityUnlocked(activityId)) return false
@@ -36,55 +38,34 @@ export class ActivityManager {
   }
 
   /**
-   * Start an activity
-   * @param {string} activityId - Activity identifier
-   * @param {Object} options - Options like {autoMode: true}
-   */
-  start(activityId, options = {}) {
-    if (!this.canStart(activityId)) {
-      throw new Error(`Cannot start activity: ${activityId}`)
-    }
-
-    // Stop all currently running NON-AUTOMATED activities (only one manual activity at a time)
-    for (const [existingId, state] of this.activeActivities.entries()) {
-      // Check if activity is automated by workers
-      const isAutomated = this.workerManager && this.workerManager.isAutomated(existingId)
-      if (!isAutomated) {
-        this.stopActivity(existingId)
-      }
-    }
-
-    const activity = this.activityDefinitions.find(a => a.id === activityId)
-    const now = Date.now()
-
-    // Use effective duration (with speed upgrades)
-    const effectiveDuration = this.getEffectiveDuration(activityId)
-
-    this.activeActivities.set(activityId, {
-      activityId,
-      startTime: now,
-      duration: effectiveDuration * 1000,  // Convert to ms
-      progress: 0,
-      autoMode: options.autoMode !== undefined ? options.autoMode : true  // Auto-mode ON by default
-    })
-
-    if (this.eventBus) {
-      this.eventBus.emit('activity:started', {
-        activityId,
-        skillId: activity.skillId
-      })
-    }
-  }
-
-  /**
    * Update all active activities
+   * Auto-starts activities that have workers assigned
    * @param {number} deltaTime - Time elapsed in ms
    */
   update(deltaTime) {
+    // Start any activities that have workers but aren't running
+    if (this.workerManager) {
+      const allActivityIds = this.activityDefinitions.map(a => a.id)
+      for (const activityId of allActivityIds) {
+        if (this.workerManager.isAutomated(activityId)) {
+          if (!this.activeActivities.has(activityId) && this.canRun(activityId)) {
+            this._startActivity(activityId)
+          }
+        }
+      }
+    }
+
     const completed = []
 
     // Update all activities
     for (const [activityId, state] of this.activeActivities.entries()) {
+      // Check if activity should still be running
+      if (!this.canRun(activityId)) {
+        // Stop if workers were unassigned or can't afford
+        this._stopActivity(activityId)
+        continue
+      }
+
       const elapsed = state.progress * state.duration + deltaTime
       const newProgress = elapsed / state.duration
 
@@ -105,6 +86,59 @@ export class ActivityManager {
   }
 
   /**
+   * Start an activity (internal - called automatically when workers assigned)
+   * @private
+   */
+  _startActivity(activityId) {
+    if (this.activeActivities.has(activityId)) return
+
+    const activity = this.activityDefinitions.find(a => a.id === activityId)
+    if (!activity) return
+
+    const now = Date.now()
+
+    // Use effective duration (with worker speed and upgrades)
+    const effectiveDuration = this.getEffectiveDuration(activityId)
+
+    // If duration is 0 or Infinity, don't start
+    if (effectiveDuration === 0 || !isFinite(effectiveDuration)) {
+      return
+    }
+
+    this.activeActivities.set(activityId, {
+      activityId,
+      startTime: now,
+      duration: effectiveDuration * 1000,  // Convert to ms
+      progress: 0
+    })
+
+    if (this.eventBus) {
+      this.eventBus.emit('activity:started', {
+        activityId,
+        skillId: activity.skillId
+      })
+    }
+  }
+
+  /**
+   * Stop an activity (internal)
+   * @private
+   */
+  _stopActivity(activityId) {
+    const state = this.activeActivities.get(activityId)
+    if (!state) return
+
+    if (this.eventBus) {
+      this.eventBus.emit('activity:stopped', {
+        activityId,
+        progress: state.progress
+      })
+    }
+
+    this.activeActivities.delete(activityId)
+  }
+
+  /**
    * Complete an activity (internal)
    * @private
    */
@@ -118,6 +152,11 @@ export class ActivityManager {
 
     // Consume inputs (with cost reduction applied)
     this.currencyManager.spendCosts(effectiveInputs)
+
+    // Consume speed boost resources
+    if (this.workerManager) {
+      this.workerManager.consumeSpeedBoosts(activityId)
+    }
 
     // Grant outputs (with bonuses applied)
     Object.entries(effectiveOutputs).forEach(([currencyId, amount]) => {
@@ -140,10 +179,7 @@ export class ActivityManager {
     // Remove from active
     this.activeActivities.delete(activityId)
 
-    // Restart if auto-mode and can afford
-    if (state.autoMode && this.canStart(activityId)) {
-      this.start(activityId, { autoMode: true })
-    }
+    // Will auto-restart on next update if workers still assigned and can afford
   }
 
   /**
@@ -163,36 +199,6 @@ export class ActivityManager {
    */
   getActiveActivities() {
     return Array.from(this.activeActivities.values())
-  }
-
-  /**
-   * Stop an activity
-   * @param {string} activityId - Activity identifier
-   */
-  stopActivity(activityId) {
-    const state = this.activeActivities.get(activityId)
-    if (!state) return
-
-    if (this.eventBus) {
-      this.eventBus.emit('activity:stopped', {
-        activityId,
-        progress: state.progress
-      })
-    }
-
-    this.activeActivities.delete(activityId)
-  }
-
-  /**
-   * Set auto-mode for an activity
-   * @param {string} activityId - Activity identifier
-   * @param {boolean} enabled - Enable/disable auto-mode
-   */
-  setAutoMode(activityId, enabled) {
-    const state = this.activeActivities.get(activityId)
-    if (state) {
-      state.autoMode = enabled
-    }
   }
 
   /**
@@ -229,9 +235,12 @@ export class ActivityManager {
       duration = duration * speedMultiplier
     }
 
-    // Apply worker speed multiplier (workers slower = higher duration)
+    // Apply worker speed multiplier (workers = inverted to get duration)
     if (this.workerManager) {
-      const workerSpeedMultiplier = this.workerManager.getSpeedMultiplier(activityId)
+      const workerSpeedMultiplier = this.workerManager.getSpeedMultiplier(activityId, activity.skillId)
+      if (workerSpeedMultiplier === 0) {
+        return Infinity  // No workers = infinite duration (doesn't run)
+      }
       duration = duration / workerSpeedMultiplier
     }
 

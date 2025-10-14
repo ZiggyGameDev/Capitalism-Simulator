@@ -6,6 +6,17 @@
 export const activities = [
   // ========== FARMING: Human Agricultural Labor ==========
   {
+    id: 'hireWorker',
+    name: 'Hire Basic Worker',
+    skillId: 'farming',
+    levelRequired: 1,
+    inputs: { wheat: 5, water: 3 },
+    outputs: { basicWorker: 1 },
+    duration: 10,
+    xpGained: 15,
+    description: 'Recruit laborers with food and water'
+  },
+  {
     id: 'plantWheat',
     name: 'Plant Wheat by Hand',
     skillId: 'farming',
@@ -98,6 +109,17 @@ export const activities = [
     description: 'Primitive tool making'
   },
   {
+    id: 'cookFood',
+    name: 'Cook Fast Food',
+    skillId: 'crafting',
+    levelRequired: 5,
+    inputs: { wheat: 3, corn: 2, water: 1 },
+    outputs: { fastFood: 2 },
+    duration: 4,
+    xpGained: 10,
+    description: 'Quick meals for workers'
+  },
+  {
     id: 'sawPlanks',
     name: 'Saw Planks',
     skillId: 'crafting',
@@ -165,6 +187,17 @@ export const activities = [
     xpGained: 20,
     description: 'Tools that make tools'
   },
+  {
+    id: 'buildTractor',
+    name: 'Build Tractor Worker',
+    skillId: 'manufacturing',
+    levelRequired: 20,
+    inputs: { steel: 15, equipment: 5, machine: 2 },
+    outputs: { tractorWorker: 1 },
+    duration: 15,
+    xpGained: 40,
+    description: 'Mechanized farming - faster than basic workers'
+  },
 
   // ========== ENGINEERING: Building the Machines ==========
   {
@@ -200,6 +233,28 @@ export const activities = [
     xpGained: 30,
     description: 'The brain of automation'
   },
+  {
+    id: 'buildTV',
+    name: 'Build TV',
+    skillId: 'engineering',
+    levelRequired: 15,
+    inputs: { plastic: 3, circuit: 2, steel: 1 },
+    outputs: { tv: 1 },
+    duration: 6,
+    xpGained: 25,
+    description: 'Entertainment for workers'
+  },
+  {
+    id: 'buildPhone',
+    name: 'Build Phone',
+    skillId: 'engineering',
+    levelRequired: 18,
+    inputs: { plastic: 2, circuit: 3, electronics: 1 },
+    outputs: { phone: 1 },
+    duration: 5,
+    xpGained: 28,
+    description: 'Communication devices'
+  },
 
   // ========== AUTOMATION: Humans Need Not Apply ==========
   {
@@ -212,6 +267,17 @@ export const activities = [
     duration: 4,
     xpGained: 20,
     description: 'Petroleum byproducts everywhere'
+  },
+  {
+    id: 'refineFuel',
+    name: 'Refine Fuel',
+    skillId: 'automation',
+    levelRequired: 5,
+    inputs: { coal: 3 },
+    outputs: { fuel: 2 },
+    duration: 3,
+    xpGained: 18,
+    description: 'Fuel for machines'
   },
   {
     id: 'manufactureElectronics',
@@ -245,6 +311,17 @@ export const activities = [
     duration: 8,
     xpGained: 45,
     description: 'Autonomous labor units'
+  },
+  {
+    id: 'buildDroneWorker',
+    name: 'Build Drone Worker',
+    skillId: 'automation',
+    levelRequired: 25,
+    inputs: { electronics: 8, circuit: 5, plastic: 6, algorithm: 1 },
+    outputs: { droneWorker: 1 },
+    duration: 12,
+    xpGained: 60,
+    description: 'AI-powered automation - nearly as fast as humans'
   },
   {
     id: 'convertWorkersToUnits',

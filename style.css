@@ -293,6 +293,112 @@ body {
   opacity: 0.9;
 }
 
+/* Worker Assignment Controls in Activities */
+.activity-worker-assignments {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #dee2e6;
+}
+
+.worker-assignment-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.no-workers-hint {
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 8px;
+}
+
+.worker-assignment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.worker-type-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.worker-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.worker-btn-minus, .worker-btn-plus {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  background: #667eea;
+  color: white;
+  transition: all 0.2s;
+}
+
+.worker-btn-minus:hover:not(:disabled),
+.worker-btn-plus:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.worker-btn-minus:disabled,
+.worker-btn-plus:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.activity-status {
+  font-size: 12px;
+  color: #667eea;
+  font-weight: 600;
+  text-align: right;
+  margin-top: 6px;
+}
+
+/* Worker Summary in Panel */
+.worker-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.worker-summary-item {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px;
+  border: 2px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.worker-summary-icon {
+  font-size: 24px;
+}
+
+.worker-summary-name {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+}
+
+.worker-summary-stats {
+  font-size: 12px;
+  color: #666;
+}
+
 /* Right Column */
 .right-column {
   display: flex;
@@ -623,6 +729,87 @@ body {
   font-weight: 600;
 }
 
+/* Worker Remove All Button */
+.worker-assignment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.worker-btn-remove-all {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+  cursor: pointer;
+  background: #f44336;
+  color: white;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.worker-btn-remove-all:hover {
+  background: #da190b;
+  transform: scale(1.05);
+}
+
+/* Halted Activity Styling */
+.activity-item.halted {
+  border-color: #ff9800;
+  background: #fff3e0;
+  position: relative;
+}
+
+.activity-item.halted::before {
+  content: '⚠️';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.activity-halted-warning {
+  background: #ff9800;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 8px 0;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+/* Insufficient Resources Indicator */
+.insufficient {
+  color: #f44336;
+  font-weight: 700;
+  text-decoration: underline wavy #f44336;
+}
+
+/* Free Activity Label */
+.free-label {
+  color: #4caf50;
+  font-weight: 700;
+  background: #e8f5e9;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .game-main {
@@ -644,3 +831,4 @@ body {
     overflow-y: auto;
   }
 }
+

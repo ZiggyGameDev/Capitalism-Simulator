@@ -15,12 +15,15 @@ export class GameEngine {
     this.currencyManager = new CurrencyManager()
     this.skillManager = new SkillManager(skillDefinitions, activityDefinitions, this.eventBus)
     this.upgradeManager = new UpgradeManager(upgradeDefinitions, this.currencyManager, this.skillManager, this.eventBus)
-    this.workerManager = new WorkerManager(this.eventBus)
+    this.workerManager = new WorkerManager(this.eventBus, this.currencyManager)
     this.activityManager = new ActivityManager(activityDefinitions, this.currencyManager, this.skillManager, this.eventBus, this.upgradeManager, this.workerManager)
 
     this.isRunning = false
     this.isPaused = false
     this.lastUpdateTime = 0
+
+    // Give starting workers so players can test the automation system immediately
+    this.currencyManager.add('basicWorker', 2)
   }
 
   /**
@@ -193,6 +196,9 @@ export class GameEngine {
     this.activityManager.reset()
     this.upgradeManager.reset()
     this.workerManager.reset()
+
+    // Give starting workers again after reset
+    this.currencyManager.add('basicWorker', 2)
   }
 
   /**

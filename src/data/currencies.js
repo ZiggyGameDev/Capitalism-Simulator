@@ -27,7 +27,18 @@ export const currencies = {
   // Dog Handling
   puppy: { id: 'puppy', name: 'Puppy', description: 'Cute stray puppy', icon: '🐕' },
   guardDog: { id: 'guardDog', name: 'Guard Dog', description: 'Trained guard dog', icon: '🐕‍🦺' },
-  bones: { id: 'bones', name: 'Bones', description: 'Dog treats', icon: '🦴' }
+  bones: { id: 'bones', name: 'Bones', description: 'Dog treats', icon: '🦴' },
+
+  // Workers (automation)
+  basicWorker: { id: 'basicWorker', name: 'Basic Worker', description: 'A regular human worker', icon: '👷' },
+  tractorWorker: { id: 'tractorWorker', name: 'Tractor Worker', description: 'Worker with tractor', icon: '🚜' },
+  droneWorker: { id: 'droneWorker', name: 'Drone Worker', description: 'Automated drone', icon: '🚁' },
+
+  // Speed Boost Resources
+  tv: { id: 'tv', name: 'TV', description: 'Entertainment for workers', icon: '📺' },
+  phone: { id: 'phone', name: 'Phone', description: 'Communication device', icon: '📱' },
+  fastFood: { id: 'fastFood', name: 'Fast Food', description: 'Quick meals', icon: '🍔' },
+  fuel: { id: 'fuel', name: 'Fuel', description: 'Powers machines', icon: '⛽' }
 }
 
 export const currencyList = Object.values(currencies)
