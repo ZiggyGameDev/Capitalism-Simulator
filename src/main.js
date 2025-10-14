@@ -196,6 +196,7 @@ function renderActivityList(skillId) {
 
     const activityDiv = document.createElement('div')
     activityDiv.className = `activity-item ${!unlocked ? 'locked' : ''} ${isRunning ? 'running' : ''} ${isHalted ? 'halted' : ''}`
+    activityDiv.setAttribute('data-activity-id', activity.id)
 
     // Build inputs text with emojis and check if we can afford them
     const inputsText = Object.keys(activity.inputs).length === 0
@@ -338,13 +339,16 @@ function renderActiveActivities() {
 
 function updateCurrencyTicker() {
   renderCurrencyTicker()
-  renderWorkerPanel()  // Update hire button if workerUnit changed
+  renderWorkerPanel()  // Update worker counts immediately when currencies change
+  console.log('[Render] Currency changed - updated ticker and worker panel')
 }
 
 function handleActivityCompleted(data) {
   renderActivityList(selectedSkill)
   renderCurrencyTicker()
   renderActiveActivities()
+  renderWorkerPanel()  // Update worker panel when activities complete
+  console.log('[Activity] Completed:', data.activityId)
 }
 
 function handleActivityStarted(data) {
@@ -367,18 +371,44 @@ function handleSkillLevelup(data) {
 
 let lastTickRender = 0
 function handleGameTick(data) {
-  // Update progress bars
+  // Update progress bars in active activities panel
   const active = game.activityManager.getActiveActivities()
   if (active.length > 0) {
     renderActiveActivities()
 
-    // Only re-render activity list occasionally (every 500ms) to show progress
+    // Update progress bars in activity list WITHOUT full re-render
+    updateActivityProgressBars()
+
+    // Only do full re-render occasionally (every 500ms) to update halted states
     const now = Date.now()
     if (now - lastTickRender > 500) {
       lastTickRender = now
       renderActivityList(selectedSkill)
     }
   }
+}
+
+// Update just the progress bars without re-rendering entire activity list
+function updateActivityProgressBars() {
+  const active = game.activityManager.getActiveActivities()
+  active.forEach(state => {
+    const activityId = state.activityId
+    const progress = game.activityManager.getProgress(activityId)
+
+    // Find the activity element
+    const activityElements = document.querySelectorAll(`[data-activity-id="${activityId}"]`)
+    activityElements.forEach(el => {
+      const progressFill = el.querySelector('.activity-progress-fill')
+      const progressStatus = el.querySelector('.activity-status')
+
+      if (progressFill) {
+        progressFill.style.width = `${progress * 100}%`
+      }
+      if (progressStatus) {
+        progressStatus.textContent = `${Math.floor(progress * 100)}%`
+      }
+    })
+  })
 }
 
 function handleOfflineProgress(data) {
@@ -478,10 +508,14 @@ function renderWorkerPanel() {
   let workerSummaryHTML = '<h3>Workers</h3><div class="worker-summary">'
   let hasWorkers = false
 
+  const workerCounts = []
+
   game.workerManager.workerTypes.forEach(workerType => {
     const total = game.currencyManager.get(workerType.id) || 0
     const assigned = game.workerManager.getAssignedWorkers(workerType.id)
     const available = total - assigned
+
+    workerCounts.push(`${workerType.id}: ${total}`)
 
     if (total > 0) {
       hasWorkers = true
@@ -494,6 +528,8 @@ function renderWorkerPanel() {
       `
     }
   })
+
+  console.log('[Render] Worker panel updated:', workerCounts.join(', '))
 
   workerSummaryHTML += '</div>'
 
