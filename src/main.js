@@ -548,7 +548,7 @@ function createBuildingCard(buildingType) {
     const canAfford = current >= amount
     const resource = resources[resourceId]
     return `<div class="cost-item ${canAfford ? '' : 'insufficient'}">
-      ${resource.icon} ${Math.floor(current)}/${amount}
+      ${resource.icon} ${resource.name}: ${Math.floor(current)}/${amount}
     </div>`
   }).join('')
 

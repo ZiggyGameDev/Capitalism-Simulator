@@ -7,9 +7,9 @@ export class TownRenderer {
     this.ctx = canvas.getContext('2d')
     this.engine = engine
 
-    // Canvas dimensions
-    this.width = canvas.clientWidth
-    this.height = canvas.clientHeight
+    // Canvas dimensions - use clientWidth or fallback to reasonable default
+    this.width = canvas.clientWidth || 800
+    this.height = canvas.clientHeight || 600
 
     // Set canvas size
     this.canvas.width = this.width
