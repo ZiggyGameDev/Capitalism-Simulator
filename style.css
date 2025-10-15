@@ -1802,12 +1802,76 @@ canvas {
   box-shadow: inset 0 0 20px rgba(123, 140, 222, 0.2);
 }
 
+/* Resource Emojis in Skill Buttons */
+.skill-resources {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  justify-content: center;
+}
+
+.skill-resource-emoji {
+  font-size: 16px;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.skill-resource-emoji.active {
+  opacity: 1;
+}
+
+/* Pulsing animations for active resources */
+.skill-resource-emoji.pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.skill-resource-emoji.pulse-medium {
+  animation: pulse-medium 1.5s ease-in-out infinite;
+}
+
+.skill-resource-emoji.pulse-fast {
+  animation: pulse-fast 1s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-medium {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-fast {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
 /* Responsive layout - no scrolling */
 @media (min-height: 900px) {
   .game-main {
     max-height: calc(100vh - 200px);
   }
-  
+
   .activity-panel {
     max-height: calc(100vh - 250px);
   }
