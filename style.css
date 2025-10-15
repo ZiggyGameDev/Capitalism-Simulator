@@ -1229,12 +1229,12 @@ body {
 }
 
 .town-canvas {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   background: #3d5a80;
   border-radius: 8px;
   border: 2px solid #4a5568;
-  min-height: 300px;
-  max-height: 450px;
+  min-height: 400px;
 }
 
 /* Construction Timer */

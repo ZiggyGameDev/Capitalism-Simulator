@@ -264,6 +264,20 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(content => {
     content.classList.toggle('active', content.dataset.view === tabName)
   })
+
+  // When switching to city tab, resize canvas to fit properly
+  if (tabName === 'city' && townRenderer) {
+    // Wait for layout to complete
+    setTimeout(() => {
+      const townCanvas = document.getElementById('townCanvas')
+      if (townCanvas) {
+        const newWidth = townCanvas.clientWidth || 800
+        const newHeight = townCanvas.clientHeight || 600
+        townRenderer.resize(newWidth, newHeight)
+        townRenderer.render() // Force a render after resize
+      }
+    }, 50)
+  }
 }
 
 // ============================================================================
