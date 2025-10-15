@@ -177,17 +177,6 @@ export const activities = [
     xpGained: 20,
     description: 'Tools that make tools'
   },
-  {
-    id: 'buildTractor',
-    name: 'Build Tractor Worker',
-    skillId: 'manufacturing',
-    levelRequired: 20,
-    inputs: { steel: 15, equipment: 5, machine: 2 },
-    outputs: { tractorWorker: 1 },
-    duration: 15,
-    xpGained: 40,
-    description: 'Mechanized farming - faster than basic workers'
-  },
 
   // ========== ENGINEERING: Building the Machines ==========
   {
@@ -301,17 +290,6 @@ export const activities = [
     duration: 8,
     xpGained: 45,
     description: 'Autonomous labor units'
-  },
-  {
-    id: 'buildDroneWorker',
-    name: 'Build Drone Worker',
-    skillId: 'automation',
-    levelRequired: 25,
-    inputs: { electronics: 8, circuit: 5, plastic: 6, algorithm: 1 },
-    outputs: { droneWorker: 1 },
-    duration: 12,
-    xpGained: 60,
-    description: 'AI-powered automation - nearly as fast as humans'
   },
   {
     id: 'convertWorkersToUnits',

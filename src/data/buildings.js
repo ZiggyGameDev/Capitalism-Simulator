@@ -220,6 +220,28 @@ export const buildingTypes = [
         workersRequired: 1,
         trainingTime: 30, // seconds
         cost: { wheat: 20 }
+      },
+      {
+        id: 'train_tractor',
+        name: 'Tractor Operator Training',
+        emoji: '🚜',
+        description: 'Train workers to operate tractors',
+        inputWorker: 'basicWorker',
+        outputWorker: 'tractorWorker',
+        workersRequired: 1,
+        trainingTime: 60, // seconds - more advanced
+        cost: { steel: 10, equipment: 5, machine: 2 }
+      },
+      {
+        id: 'train_drone',
+        name: 'Drone Operator Training',
+        emoji: '🚁',
+        description: 'Train workers to control drones',
+        inputWorker: 'basicWorker',
+        outputWorker: 'droneWorker',
+        workersRequired: 1,
+        trainingTime: 90, // seconds - very advanced
+        cost: { electronics: 5, circuit: 3, plastic: 4 }
       }
     ],
 
