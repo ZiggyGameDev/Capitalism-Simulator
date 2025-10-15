@@ -28,6 +28,7 @@ let townRenderer = null
 // State
 let selectedSkill = 'farming'  // First skill in expanded content
 let lastUnlockState = new Map() // Track which activities are unlocked to detect changes
+let lastBuildingUnlockState = new Map() // Track which buildings are unlocked to detect changes
 let autoSaveInterval = null
 let currentTab = 'activities' // 'activities' or 'city'
 
@@ -611,15 +612,43 @@ function buildBuildingMenu() {
     slotsInfo.textContent = `${usedSlots}/${availableSlots} Slots Used`
   }
 
-  // Clear container
-  container.innerHTML = ''
+  // Track newly unlocked buildings
+  const newlyUnlockedBuildings = []
 
   // Get all building types
   const buildingTypes = game.buildingManager.buildingTypes
 
   buildingTypes.forEach(buildingType => {
+    const isUnlocked = game.buildingManager.isUnlocked(buildingType)
+    const wasUnlocked = lastBuildingUnlockState.get(buildingType.id)
+
+    // Track newly unlocked buildings
+    if (wasUnlocked === false && isUnlocked) {
+      newlyUnlockedBuildings.push(buildingType.id)
+    }
+
+    // Update unlock state tracking
+    lastBuildingUnlockState.set(buildingType.id, isUnlocked)
+  })
+
+  // Clear container
+  container.innerHTML = ''
+
+  buildingTypes.forEach(buildingType => {
     const card = createBuildingCard(buildingType)
     container.appendChild(card)
+
+    // Apply sparkle effect to newly unlocked buildings
+    if (newlyUnlockedBuildings.includes(buildingType.id)) {
+      card.classList.add('newly-unlocked')
+
+      // Remove sparkle on first hover
+      const removeSparkle = () => {
+        card.classList.remove('newly-unlocked')
+        card.removeEventListener('mouseenter', removeSparkle)
+      }
+      card.addEventListener('mouseenter', removeSparkle)
+    }
   })
 }
 
@@ -1150,16 +1179,36 @@ function handleBuildingEvent(data) {
 function checkForUnlocks() {
   // Check if any unlocks changed - if so, rebuild activity list
   let unlockChanged = false
+  const newlyUnlockedActivities = []
 
   lastUnlockState.forEach((wasUnlocked, activityId) => {
     const isUnlocked = game.skillManager.isActivityUnlocked(activityId)
     if (wasUnlocked !== isUnlocked) {
       unlockChanged = true
+      // Track activities that just became unlocked
+      if (!wasUnlocked && isUnlocked) {
+        newlyUnlockedActivities.push(activityId)
+      }
     }
   })
 
   if (unlockChanged) {
     buildActivityList(selectedSkill)
+
+    // Apply sparkle effect to newly unlocked activities
+    newlyUnlockedActivities.forEach(activityId => {
+      const cached = activityElements.get(activityId)
+      if (cached && cached.root) {
+        cached.root.classList.add('newly-unlocked')
+
+        // Remove sparkle on first hover
+        const removeSparkle = () => {
+          cached.root.classList.remove('newly-unlocked')
+          cached.root.removeEventListener('mouseenter', removeSparkle)
+        }
+        cached.root.addEventListener('mouseenter', removeSparkle)
+      }
+    })
   }
 }
 
