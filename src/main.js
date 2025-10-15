@@ -274,7 +274,11 @@ function switchTab(tabName) {
         const newWidth = townCanvas.clientWidth || 800
         const newHeight = townCanvas.clientHeight || 600
         townRenderer.resize(newWidth, newHeight)
+        // Force worker respawn by resetting timer
+        townRenderer.lastWorkerUpdate = 0
+        townRenderer.cachedWorkerCount = 0
         townRenderer.render() // Force a render after resize
+        console.log(`[TownRenderer] Switched to city tab - Canvas: ${newWidth}x${newHeight}, Workers should respawn`)
       }
     }, 50)
   }

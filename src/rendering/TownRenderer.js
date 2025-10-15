@@ -15,9 +15,9 @@ export class TownRenderer {
     this.canvas.width = this.width
     this.canvas.height = this.height
 
-    // Grid layout for buildings (5 columns x 4 rows = 20 building slots)
-    this.gridColumns = 5
-    this.gridRows = 4
+    // Grid layout for buildings (3 columns x 3 rows = 9 building slots)
+    this.gridColumns = 3
+    this.gridRows = 3
     this.cellWidth = this.width / this.gridColumns
     this.cellHeight = this.height / this.gridRows // Use full height for buildings
 
