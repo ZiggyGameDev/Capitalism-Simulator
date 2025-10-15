@@ -42,6 +42,13 @@ body {
   color: #e0e0e0;
 }
 
+.currency-rate {
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 6px;
+  opacity: 0.9;
+}
+
 /* Main Game Layout */
 .game-main {
   display: grid;

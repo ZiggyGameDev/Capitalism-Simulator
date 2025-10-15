@@ -490,11 +490,12 @@ function createResourceElement(resourceId, amount) {
   const div = document.createElement('div')
   div.className = 'currency-item'
   div.dataset.currencyId = resourceId
-  div.innerHTML = `${resource.icon} ${resource.name}: <span class="currency-amount">${Math.floor(amount)}</span>`
+  div.innerHTML = `${resource.icon} ${resource.name}: <span class="currency-amount">${Math.floor(amount)}</span> <span class="currency-rate"></span>`
 
   resourceElements.set(resourceId, {
     root: div,
-    amount: div.querySelector('.currency-amount')
+    amount: div.querySelector('.currency-amount'),
+    rate: div.querySelector('.currency-rate')
   })
 
   container.appendChild(div)
@@ -789,6 +790,29 @@ function updateSkillSelection() {
   })
 }
 
+function calculateResourceProductionRate(resourceId) {
+  let totalPerSecond = 0
+
+  // Go through all activities to find production rates
+  activities.forEach(activity => {
+    const outputs = activity.outputs
+    if (outputs[resourceId]) {
+      const outputAmount = outputs[resourceId]
+      const effectiveDuration = game.activityManager.getEffectiveDuration(activity.id)
+      const isAutomated = game.workerManager.isAutomated(activity.id)
+      const canRun = game.activityManager.canRun(activity.id)
+
+      // Only count if activity is automated, has finite duration, and can run
+      if (isAutomated && isFinite(effectiveDuration) && effectiveDuration > 0 && canRun) {
+        const perSecond = outputAmount / effectiveDuration
+        totalPerSecond += perSecond
+      }
+    }
+  })
+
+  return totalPerSecond
+}
+
 function updateResourceAmount(resourceId) {
   const amount = game.resourceManager.get(resourceId)
 
@@ -810,6 +834,16 @@ function updateResourceAmount(resourceId) {
   // Update or remove
   if (amount > 0) {
     cached.amount.textContent = Math.floor(amount)
+
+    // Update production rate
+    const ratePerSecond = calculateResourceProductionRate(resourceId)
+    if (ratePerSecond > 0) {
+      const ratePerMinute = Math.round(ratePerSecond * 60 * 10) / 10
+      cached.rate.textContent = `(+${ratePerMinute}/min)`
+      cached.rate.style.color = '#4ade80' // Green color for positive rate
+    } else {
+      cached.rate.textContent = ''
+    }
   } else {
     cached.root.remove()
     resourceElements.delete(resourceId)
