@@ -1204,9 +1204,10 @@ function handleActivityClick(e) {
     const available = game.workerManager.getAvailableWorkers(workerTypeId)
 
     if (available > 0 && !target.disabled) {
+      // Temporarily disable to prevent double-clicks
       target.disabled = true
-      setTimeout(() => { target.disabled = false }, 150)
       game.workerManager.assign(activityId, workerTypeId, current + 1)
+      // Note: Button state will be properly updated by updateActivityState() via worker:assigned event
     }
   }
 
@@ -1218,9 +1219,10 @@ function handleActivityClick(e) {
     const current = game.workerManager.getAssignment(activityId, workerTypeId)
 
     if (current > 0 && !target.disabled) {
+      // Temporarily disable to prevent double-clicks
       target.disabled = true
-      setTimeout(() => { target.disabled = false }, 150)
       game.workerManager.assign(activityId, workerTypeId, current - 1)
+      // Note: Button state will be properly updated by updateActivityState() via worker:unassigned event
     }
   }
 
@@ -1230,9 +1232,10 @@ function handleActivityClick(e) {
     const activityId = target.dataset.activity
 
     if (!target.disabled) {
+      // Temporarily disable to prevent double-clicks
       target.disabled = true
-      setTimeout(() => { target.disabled = false }, 150)
       game.workerManager.unassignAll(activityId)
+      // Note: Button state will be properly updated by updateActivityState() via worker:unassigned event
     }
   }
 }
