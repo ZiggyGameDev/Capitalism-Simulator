@@ -7,23 +7,32 @@
 body {
   font-family: 'Segoe UI', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
 }
 
 .game-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
 }
 
 /* Currency Ticker */
 .currency-ticker-container {
   background: rgba(30, 30, 46, 0.95);
-  border-radius: 10px;
-  padding: 15px;
-  margin-bottom: 20px;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
 
 .currency-ticker {
@@ -52,19 +61,23 @@ body {
 /* Main Game Layout */
 .game-main {
   display: grid;
-  grid-template-columns: 250px 1fr 300px;
-  gap: 20px;
-  min-height: 600px;
+  grid-template-columns: 220px 1fr 280px;
+  gap: 10px;
+  flex: 1;
+  overflow: hidden;
+  max-height: 100%;
 }
 
 /* Skill Panel (Left) */
 .skill-panel {
   background: rgba(30, 30, 46, 0.95);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  max-height: 100%;
 }
 
 /* Compact Worker Summary in Skill Panel */
@@ -246,10 +259,11 @@ body {
 /* Activity Panel (Center) */
 .activity-panel {
   background: rgba(30, 30, 46, 0.95);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
   overflow-y: auto;
+  max-height: 100%;
 }
 
 .activity-panel h2 {
@@ -267,11 +281,11 @@ body {
 .activity-item {
   background: #2a2a3e;
   border-radius: 8px;
-  padding: 15px;
+  padding: 10px;
   border: 2px solid #404060;
   transition: all 0.2s;
   /* Reserve minimum height to prevent jumping */
-  min-height: 180px;
+  min-height: 140px;
 }
 
 .activity-item.locked {
@@ -459,15 +473,19 @@ body {
 .right-column {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
+  overflow: hidden;
+  max-height: 100%;
 }
 
 /* Active Activities Panel */
 .active-panel {
   background: rgba(30, 30, 46, 0.95);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  flex: 1;
+  overflow-y: auto;
 }
 
 .active-panel h3 {
@@ -830,10 +848,10 @@ body {
 .activity-simulation-canvas {
   display: block;
   width: 100%;
-  height: 80px;
+  height: 60px;
   border-radius: 4px;
   background: #1a1a2e;
-  margin: 8px 0;
+  margin: 6px 0;
   border: 1px solid #2d3748;
 }
 
@@ -1179,7 +1197,8 @@ body {
   background: #3d5a80;
   border-radius: 8px;
   border: 2px solid #4a5568;
-  min-height: 400px;
+  min-height: 300px;
+  max-height: 450px;
 }
 
 /* Construction Timer */
