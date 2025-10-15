@@ -675,16 +675,23 @@ function buildWorkerPanel() {
 }
 
 function buildBuildingMenu() {
-  const container = document.getElementById('buildingMenu')
-  const slotsInfo = document.getElementById('buildingSlots')
+  const containerDesktop = document.getElementById('buildingMenu')
+  const containerMobile = document.getElementById('buildingMenuMobile')
+  const slotsInfoDesktop = document.getElementById('buildingSlots')
+  const slotsInfoMobile = document.getElementById('buildingSlotsMobile')
 
-  if (!container) return
+  if (!containerDesktop && !containerMobile) return
 
-  // Update slots display
-  if (slotsInfo) {
-    const usedSlots = game.buildingManager.usedSlots
-    const availableSlots = game.buildingManager.availableSlots
-    slotsInfo.textContent = `${usedSlots}/${availableSlots} Slots Used`
+  // Update slots display for both desktop and mobile
+  const usedSlots = game.buildingManager.usedSlots
+  const availableSlots = game.buildingManager.availableSlots
+  const slotsText = `${usedSlots}/${availableSlots} Slots Used`
+
+  if (slotsInfoDesktop) {
+    slotsInfoDesktop.textContent = slotsText
+  }
+  if (slotsInfoMobile) {
+    slotsInfoMobile.textContent = slotsText
   }
 
   // Track newly unlocked buildings
@@ -706,23 +713,48 @@ function buildBuildingMenu() {
     lastBuildingUnlockState.set(buildingType.id, isUnlocked)
   })
 
-  // Clear container
-  container.innerHTML = ''
+  // Clear both containers
+  if (containerDesktop) {
+    containerDesktop.innerHTML = ''
+  }
+  if (containerMobile) {
+    containerMobile.innerHTML = ''
+  }
 
   buildingTypes.forEach(buildingType => {
-    const card = createBuildingCard(buildingType)
-    container.appendChild(card)
+    // Create cards for both desktop and mobile
+    if (containerDesktop) {
+      const cardDesktop = createBuildingCard(buildingType)
+      containerDesktop.appendChild(cardDesktop)
 
-    // Apply sparkle effect to newly unlocked buildings
-    if (newlyUnlockedBuildings.includes(buildingType.id)) {
-      card.classList.add('newly-unlocked')
+      // Apply sparkle effect to newly unlocked buildings
+      if (newlyUnlockedBuildings.includes(buildingType.id)) {
+        cardDesktop.classList.add('newly-unlocked')
 
-      // Remove sparkle on first hover
-      const removeSparkle = () => {
-        card.classList.remove('newly-unlocked')
-        card.removeEventListener('mouseenter', removeSparkle)
+        // Remove sparkle on first hover
+        const removeSparkle = () => {
+          cardDesktop.classList.remove('newly-unlocked')
+          cardDesktop.removeEventListener('mouseenter', removeSparkle)
+        }
+        cardDesktop.addEventListener('mouseenter', removeSparkle)
       }
-      card.addEventListener('mouseenter', removeSparkle)
+    }
+
+    if (containerMobile) {
+      const cardMobile = createBuildingCard(buildingType)
+      containerMobile.appendChild(cardMobile)
+
+      // Apply sparkle effect to newly unlocked buildings
+      if (newlyUnlockedBuildings.includes(buildingType.id)) {
+        cardMobile.classList.add('newly-unlocked')
+
+        // Remove sparkle on first hover
+        const removeSparkle = () => {
+          cardMobile.classList.remove('newly-unlocked')
+          cardMobile.removeEventListener('mouseenter', removeSparkle)
+        }
+        cardMobile.addEventListener('mouseenter', removeSparkle)
+      }
     }
   })
 }

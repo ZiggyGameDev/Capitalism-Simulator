@@ -59,7 +59,7 @@
         <div id="activityList" class="activity-list"></div>
       </div>
 
-      <!-- Right Column: Town, Active Activities & Upgrades -->
+      <!-- Right Column: Town, Active Activities, Upgrades & Buildings -->
       <div class="right-column">
         <!-- Town Canvas -->
         <div class="town-panel">
@@ -77,19 +77,32 @@
           <h3>Upgrades</h3>
           <div id="upgradeList" class="upgrade-list"></div>
         </div>
+
+        <!-- Buildings (Desktop: shown here, Mobile: shown in tab) -->
+        <div class="building-view-desktop">
+          <div class="building-menu-panel">
+            <div class="building-menu-header">
+              <h2>🏗️ Buildings</h2>
+            </div>
+            <div class="building-slots-info">
+              <span id="buildingSlots">0/9 Slots Used</span>
+            </div>
+            <div id="buildingMenu" class="building-menu"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Buildings View (Mobile Only) -->
-    <div class="building-view tab-content" data-view="buildings">
+    <!-- Buildings View (Mobile Only - Tab View) -->
+    <div class="building-view-mobile tab-content" data-view="buildings">
       <div class="building-menu-panel">
         <div class="building-menu-header">
           <h2>🏗️ Buildings</h2>
         </div>
         <div class="building-slots-info">
-          <span id="buildingSlots">0/9 Slots Used</span>
+          <span id="buildingSlotsMobile">0/9 Slots Used</span>
         </div>
-        <div id="buildingMenu" class="building-menu"></div>
+        <div id="buildingMenuMobile" class="building-menu"></div>
       </div>
     </div>
   </div>

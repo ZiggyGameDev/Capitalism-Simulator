@@ -974,23 +974,66 @@ body {
   color: white;
 }
 
-/* Tab Content - Buildings view hidden on desktop */
-.building-view {
-  display: none !important; /* Hidden on desktop - town is always visible in main view */
+/* Building Views - Desktop vs Mobile */
+.building-view-desktop {
+  display: block; /* Always visible on desktop */
 }
 
-.game-main {
-  display: grid !important; /* Always show main view on desktop */
+.building-view-mobile {
+  display: none; /* Hidden on desktop, shown via tabs on mobile */
 }
 
-/* Desktop: Optimize town panel size in right column */
+/* Desktop Layout - Show all content */
 @media (min-width: 1024px) {
+  .game-main {
+    display: grid !important;
+    grid-template-columns: 220px 1fr 380px; /* Wider right column for buildings */
+  }
+
   .town-panel {
-    max-height: 350px; /* Limit height on desktop so it doesn't dominate */
+    max-height: 280px;
+  }
+
+  .town-canvas {
+    min-height: 230px;
   }
 
   .right-column {
     max-height: 100%;
+    overflow-y: auto;
+  }
+
+  .building-view-desktop {
+    display: block !important;
+  }
+
+  .building-view-mobile {
+    display: none !important;
+  }
+
+  .building-menu-panel {
+    margin-top: 10px;
+    flex: none;
+    width: 100%;
+  }
+}
+
+/* Mobile: Hide desktop buildings, show via tabs */
+@media (max-width: 1023px) {
+  .building-view-desktop {
+    display: none !important;
+  }
+
+  .building-view-mobile {
+    display: none !important;
+  }
+
+  .building-view-mobile.active {
+    display: flex !important;
+  }
+
+  .game-main {
+    display: grid !important;
   }
 }
 
