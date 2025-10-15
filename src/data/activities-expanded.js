@@ -186,6 +186,17 @@ export const activities = [
     xpGained: 35,
     description: 'Assembling your first machine by hand'
   },
+  {
+    id: 'recruitWorkers',
+    name: 'Recruit Workers',
+    skillId: 'crafting',
+    levelRequired: 18,
+    inputs: { fastFood: 3, gold: 2 },
+    outputs: { workerUnit: 5 },
+    duration: 8,
+    xpGained: 20,
+    description: 'Hire laborers with food and coin - the commodification of humanity'
+  },
 
   // ========== MANUFACTURING: The Industrial Revolution ==========
   {

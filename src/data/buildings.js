@@ -46,11 +46,11 @@ export const buildingTypes = [
     name: 'Garage',
     emoji: '🚗',
     description: 'Produces tractors for mechanized work',
-    baseCost: { steel: 100, equipment: 50, machine: 10 },
+    baseCost: { steel: 50, equipment: 20, machine: 5 },
     costMultiplier: 1.5, // Each additional garage costs 1.5x more
     constructionTime: 60, // seconds - more complex than houses
     maxCount: 10, // Max garages in town
-    unlockCondition: { type: 'resource_mined', resource: 'steel', amount: 50 }, // Unlocks with steel
+    unlockCondition: { type: 'resource_mined', resource: 'steel', amount: 25 }, // Unlocks after producing some steel
 
     // Garage-specific properties
     roomsPerHouse: 1, // Start with 1 bay
@@ -228,39 +228,6 @@ export const buildingTypes = [
     // Available training programs
     trainingPrograms: [
       {
-        id: 'train_lumberjack',
-        name: 'Lumberjack Training',
-        emoji: '🪓',
-        description: 'Convert workers to lumberjacks',
-        inputWorker: 'basicWorker',
-        outputWorker: 'lumberjack',
-        workersRequired: 1,
-        trainingTime: 30, // seconds
-        cost: { wood: 20 }
-      },
-      {
-        id: 'train_miner',
-        name: 'Miner Training',
-        emoji: '⛏️',
-        description: 'Convert workers to miners',
-        inputWorker: 'basicWorker',
-        outputWorker: 'miner',
-        workersRequired: 1,
-        trainingTime: 30, // seconds
-        cost: { stone: 20 }
-      },
-      {
-        id: 'train_farmer',
-        name: 'Farmer Training',
-        emoji: '🌾',
-        description: 'Convert workers to farmers',
-        inputWorker: 'basicWorker',
-        outputWorker: 'farmer',
-        workersRequired: 1,
-        trainingTime: 30, // seconds
-        cost: { wheat: 20 }
-      },
-      {
         id: 'train_tractor',
         name: 'Tractor Operator Training',
         emoji: '🚜',
@@ -309,11 +276,11 @@ export const buildingTypes = [
     name: 'Drone Server',
     emoji: '🖥️',
     description: 'AI-controlled drone production facility',
-    baseCost: { electronics: 250, circuit: 150, plastic: 100 },
+    baseCost: { electronics: 100, circuit: 60, plastic: 50 },
     costMultiplier: 2.0, // Each additional drone server costs 2x more
     constructionTime: 120, // seconds - highly advanced
     maxCount: 5, // Max drone servers in town
-    unlockCondition: { type: 'resource_mined', resource: 'electronics', amount: 500 }, // Unlocks with electronics
+    unlockCondition: { type: 'resource_mined', resource: 'electronics', amount: 100 }, // Unlocks after producing electronics
 
     // Drone server-specific properties
     roomsPerHouse: 1, // Start with 1 server rack
