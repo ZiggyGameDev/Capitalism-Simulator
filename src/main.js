@@ -32,6 +32,19 @@ let lastBuildingUnlockState = new Map() // Track which buildings are unlocked to
 let autoSaveInterval = null
 let currentTab = 'activities' // 'activities' or 'city'
 
+// Mapping of skills to their primary output resources (top 4 per skill)
+const skillResourceMapping = {
+  farming: ['wheat', 'corn', 'tomato', 'potato'],
+  gathering: ['wood', 'stone', 'water'],
+  crafting: ['stoneTools', 'fastFood', 'woodenPlank', 'iron'],
+  manufacturing: ['flour', 'processedFood', 'steel', 'equipment'],
+  engineering: ['machine', 'circuit', 'tv', 'phone'],
+  automation: ['plastic', 'fuel', 'electronics', 'roboticWorker'],
+  computing: ['data', 'algorithm', 'aiCore'],
+  research: ['nanobot', 'quantumProcessor', 'consciousness'],
+  singularity: ['singularity']
+}
+
 // Initialize UI
 function init() {
   console.log('🎮 [Game] Initializing Automation Idle Game...')
@@ -114,6 +127,9 @@ function init() {
 
   // Load saved game if exists
   loadGame()
+
+  // Update skill resource indicators after initial load
+  updateSkillResourceIndicators()
 }
 
 /**
@@ -309,6 +325,16 @@ function buildSkillList() {
     const level = game.skillManager.getLevel(skill.id)
     const xpProgress = game.skillManager.getXPProgress(skill.id)
 
+    // Get resource emojis for this skill
+    const skillResources = skillResourceMapping[skill.id] || []
+    const resourceEmojisHTML = skillResources
+      .map((resourceId, index) => {
+        const resource = resources[resourceId]
+        if (!resource) return ''
+        return `<span class="skill-resource-emoji" data-resource-id="${resourceId}" data-skill-id="${skill.id}">${resource.icon}</span>`
+      })
+      .join('')
+
     skillDiv.innerHTML = `
       <div class="skill-icon">${skill.icon}</div>
       <div class="skill-info">
@@ -317,6 +343,7 @@ function buildSkillList() {
         <div class="skill-xp-bar">
           <div class="skill-xp-fill" style="width: ${xpProgress.percent * 100}%"></div>
         </div>
+        ${resourceEmojisHTML ? `<div class="skill-resources">${resourceEmojisHTML}</div>` : ''}
       </div>
     `
 
@@ -328,10 +355,19 @@ function buildSkillList() {
     })
 
     // Cache references for fast updates
+    const resourceEmojiElements = {}
+    skillResources.forEach(resourceId => {
+      const elem = skillDiv.querySelector(`[data-resource-id="${resourceId}"]`)
+      if (elem) {
+        resourceEmojiElements[resourceId] = elem
+      }
+    })
+
     skillElements.set(skill.id, {
       root: skillDiv,
       levelValue: skillDiv.querySelector('.skill-level-value'),
-      xpFill: skillDiv.querySelector('.skill-xp-fill')
+      xpFill: skillDiv.querySelector('.skill-xp-fill'),
+      resourceEmojis: resourceEmojiElements
     })
 
     container.appendChild(skillDiv)
@@ -876,6 +912,54 @@ function updateSkillSelection() {
   })
 }
 
+/**
+ * Update skill resource emoji indicators based on worker activity
+ * Makes emojis pulse slow/medium/fast based on workers assigned to activities that produce them
+ */
+function updateSkillResourceIndicators() {
+  skillElements.forEach((cached, skillId) => {
+    if (!cached.resourceEmojis) return
+
+    // Count workers assigned to activities that produce each resource for this skill
+    const resourceWorkerCounts = {}
+
+    // Get all activities for this skill
+    const skillActivities = activities.filter(a => a.skillId === skillId)
+
+    skillActivities.forEach(activity => {
+      // Get total workers assigned to this activity
+      const workerAssignments = game.workerManager.getActivityAssignments(activity.id)
+      const totalWorkersOnActivity = Object.values(workerAssignments).reduce((sum, count) => sum + count, 0)
+
+      // Add worker count to each output resource
+      Object.keys(activity.outputs).forEach(resourceId => {
+        resourceWorkerCounts[resourceId] = (resourceWorkerCounts[resourceId] || 0) + totalWorkersOnActivity
+      })
+    })
+
+    // Update each resource emoji with appropriate pulse class
+    Object.entries(cached.resourceEmojis).forEach(([resourceId, elem]) => {
+      const workerCount = resourceWorkerCounts[resourceId] || 0
+
+      // Remove all pulse classes
+      elem.classList.remove('pulse-slow', 'pulse-medium', 'pulse-fast', 'active')
+
+      // Add appropriate pulse class based on worker count
+      if (workerCount > 0) {
+        elem.classList.add('active')
+
+        if (workerCount >= 8) {
+          elem.classList.add('pulse-fast')
+        } else if (workerCount >= 4) {
+          elem.classList.add('pulse-medium')
+        } else {
+          elem.classList.add('pulse-slow')
+        }
+      }
+    })
+  })
+}
+
 function calculateResourceProductionRate(resourceId) {
   let totalPerSecond = 0
 
@@ -1184,6 +1268,9 @@ function handleWorkerChanged(data) {
   if (data.activityId) {
     updateActivityState(data.activityId)
   }
+
+  // Update skill resource indicators (pulsing emojis)
+  updateSkillResourceIndicators()
 }
 
 function handleOfflineProgress(data) {
