@@ -27,6 +27,14 @@ export class ActivityManager {
       return false
     }
 
+    // Check if activity requires a specific worker type
+    if (activity.workerRequired) {
+      const workerCount = this.resourceManager.get(activity.workerRequired)
+      if (workerCount <= 0) {
+        return false
+      }
+    }
+
     // Check level requirement
     if (!this.skillManager.isActivityUnlocked(activityId)) return false
 

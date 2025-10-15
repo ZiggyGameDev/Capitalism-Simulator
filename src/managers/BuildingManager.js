@@ -137,8 +137,8 @@ export class BuildingManager {
       constructionDuration: buildingType.constructionTime * 1000 // Convert to ms
     }
 
-    // Initialize house-specific data
-    if (buildingTypeId === 'house') {
+    // Initialize worker-generating building data (house, garage, droneServer, etc.)
+    if (buildingType.roomsPerHouse !== undefined) {
       buildingInstance.rooms = []
       const roomCount = buildingType.roomsPerHouse + this.getBuildingBonus('roomsPerHouse')
       for (let i = 0; i < roomCount; i++) {
@@ -212,50 +212,57 @@ export class BuildingManager {
   }
 
   /**
-   * Update worker generation for houses
+   * Update worker generation for all worker-generating buildings (garage, droneServer, etc.)
    */
   updateHouseWorkerGeneration(deltaTime) {
-    const houses = this.buildings['house'] || []
-    const houseType = this.buildingTypes.find(b => b.id === 'house')
-    if (!houseType) return
+    // Iterate through all building types that generate workers
+    for (const buildingType of this.buildingTypes) {
+      // Skip buildings that don't generate workers
+      if (!buildingType.workerGenerationTime) continue
 
-    const baseGenerationTime = houseType.workerGenerationTime * 1000 // ms
-    const bonusReduction = this.getBuildingBonus('workerGenerationTime') * 1000 // ms
-    const effectiveGenerationTime = Math.max(5000, baseGenerationTime - bonusReduction) // Min 5 seconds
+      const buildings = this.buildings[buildingType.id] || []
+      const baseGenerationTime = buildingType.workerGenerationTime * 1000 // ms
+      const bonusReduction = this.getBuildingBonus('workerGenerationTime') * 1000 // ms
+      const effectiveGenerationTime = Math.max(5000, baseGenerationTime - bonusReduction) // Min 5 seconds
 
-    for (const house of houses) {
-      if (!house.constructionComplete) continue
+      // Determine worker type to generate
+      const workerType = buildingType.workerType || 'basicWorker' // Default to basicWorker for backwards compatibility
 
-      const timers = this.houseWorkerTimers[house.instanceId]
-      if (!timers) continue
+      for (const building of buildings) {
+        if (!building.constructionComplete) continue
 
-      house.rooms.forEach((room, idx) => {
-        const roomKey = `room${idx}`
+        const timers = this.houseWorkerTimers[building.instanceId]
+        if (!timers || !building.rooms) continue
 
-        // Only generate if room isn't full
-        if (room.currentWorkers < room.maxWorkers) {
-          timers[roomKey] -= deltaTime
+        building.rooms.forEach((room, idx) => {
+          const roomKey = `room${idx}`
 
-          if (timers[roomKey] <= 0) {
-            // Generate a worker
-            room.currentWorkers++
-            this.resourceManager.add('basicWorker', 1)
+          // Only generate if room isn't full
+          if (room.currentWorkers < room.maxWorkers) {
+            timers[roomKey] -= deltaTime
 
-            // Reset timer
-            timers[roomKey] = effectiveGenerationTime
+            if (timers[roomKey] <= 0) {
+              // Generate a worker of the appropriate type
+              room.currentWorkers++
+              this.resourceManager.add(workerType, 1)
 
-            if (this.eventBus) {
-              this.eventBus.emit('building:worker_generated', {
-                instanceId: house.instanceId,
-                roomIndex: idx
-              })
+              // Reset timer
+              timers[roomKey] = effectiveGenerationTime
+
+              if (this.eventBus) {
+                this.eventBus.emit('building:worker_generated', {
+                  instanceId: building.instanceId,
+                  roomIndex: idx,
+                  workerType
+                })
+              }
             }
+          } else {
+            // Room is full, reset timer
+            timers[roomKey] = effectiveGenerationTime
           }
-        } else {
-          // Room is full, reset timer
-          timers[roomKey] = effectiveGenerationTime
-        }
-      })
+        })
+      }
     }
   }
 
@@ -563,10 +570,10 @@ export class BuildingManager {
     // Apply upgrade
     building.upgrades[upgradeId] = (building.upgrades[upgradeId] || 0) + 1
 
-    // Apply special effects immediately
-    if (building.buildingTypeId === 'house') {
-      // Recalculate rooms if room upgrade
-      if (upgrade.id === 'house_extra_room') {
+    // Apply special effects immediately for worker-generating buildings
+    if (buildingType.roomsPerHouse !== undefined && building.rooms) {
+      // Recalculate rooms if room upgrade (extra bay, extra rack, etc.)
+      if (upgrade.effect && upgrade.effect.roomsPerHouse) {
         const newRoomCount = buildingType.roomsPerHouse + this.getBuildingBonus('roomsPerHouse')
         while (building.rooms.length < newRoomCount) {
           building.rooms.push({
@@ -583,7 +590,7 @@ export class BuildingManager {
       }
 
       // Update room capacities if workers per room upgrade
-      if (upgrade.id === 'house_faster_generation' || upgrade.id.includes('workersPerRoom')) {
+      if (upgrade.effect && (upgrade.effect.workerGenerationTime || upgrade.effect.workersPerRoom)) {
         const maxWorkersPerRoom = buildingType.workersPerRoom + this.getBuildingBonus('workersPerRoom')
         building.rooms.forEach(room => {
           room.maxWorkers = maxWorkersPerRoom

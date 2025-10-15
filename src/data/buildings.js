@@ -7,7 +7,7 @@ export const buildingTypes = [
     id: 'house',
     name: 'House',
     emoji: '🏠',
-    description: 'Generates workers over time',
+    description: 'Houses produce basic workers',
     baseCost: { wood: 50, stone: 30 },
     costMultiplier: 1.5, // Each additional house costs 1.5x more
     constructionTime: 30, // seconds
@@ -17,7 +17,8 @@ export const buildingTypes = [
     // House-specific properties
     roomsPerHouse: 1, // Start with 1 room
     workersPerRoom: 5, // Max workers per room
-    workerGenerationTime: 30, // seconds to generate 1 worker
+    workerGenerationTime: 30, // seconds to produce 1 worker
+    workerType: 'basicWorker', // Produces basic workers
 
     // Upgrades
     upgrades: [
@@ -25,17 +26,55 @@ export const buildingTypes = [
         id: 'house_extra_room',
         name: 'Extra Room',
         description: 'Add another room (5 more workers)',
-        cost: { wood: 100, stone: 50 },
+        cost: { wood: 100, stone: 75 },
         effect: { roomsPerHouse: 1 },
         maxLevel: 3
       },
       {
         id: 'house_faster_generation',
-        name: 'Better Beds',
-        description: 'Workers rest faster (-5s generation time)',
-        cost: { wood: 75, gold: 25 },
+        name: 'Better Living Conditions',
+        description: 'Faster worker generation (-5s generation time)',
+        cost: { wood: 75, stone: 50 },
         effect: { workerGenerationTime: -5 },
-        maxLevel: 4
+        maxLevel: 3
+      }
+    ]
+  },
+
+  {
+    id: 'garage',
+    name: 'Garage',
+    emoji: '🚗',
+    description: 'Produces tractors for mechanized work',
+    baseCost: { steel: 100, equipment: 50, machine: 10 },
+    costMultiplier: 1.5, // Each additional garage costs 1.5x more
+    constructionTime: 60, // seconds - more complex than houses
+    maxCount: 10, // Max garages in town
+    unlockCondition: { type: 'resource_mined', resource: 'steel', amount: 50 }, // Unlocks with steel
+
+    // Garage-specific properties
+    roomsPerHouse: 1, // Start with 1 bay
+    workersPerRoom: 3, // Max tractors per bay (fewer than manual workers)
+    workerGenerationTime: 45, // seconds to produce 1 tractor (slower than workers)
+    workerType: 'tractorWorker', // Produces tractors instead of basic workers
+
+    // Upgrades
+    upgrades: [
+      {
+        id: 'garage_extra_bay',
+        name: 'Extra Bay',
+        description: 'Add another bay (3 more tractors)',
+        cost: { steel: 150, equipment: 100 },
+        effect: { roomsPerHouse: 1 },
+        maxLevel: 3
+      },
+      {
+        id: 'garage_faster_production',
+        name: 'Assembly Line',
+        description: 'Faster tractor production (-10s production time)',
+        cost: { steel: 100, machine: 20 },
+        effect: { workerGenerationTime: -10 },
+        maxLevel: 3
       }
     ]
   },
@@ -261,6 +300,44 @@ export const buildingTypes = [
         cost: { wood: 200, stone: 200, gold: 100 },
         effect: { trainingSlots: 2 },
         maxLevel: 2
+      }
+    ]
+  },
+
+  {
+    id: 'droneServer',
+    name: 'Drone Server',
+    emoji: '🖥️',
+    description: 'AI-controlled drone production facility',
+    baseCost: { electronics: 200, circuit: 100, aiCore: 5 },
+    costMultiplier: 2.0, // Each additional drone server costs 2x more
+    constructionTime: 120, // seconds - highly advanced
+    maxCount: 5, // Max drone servers in town
+    unlockCondition: { type: 'resource_mined', resource: 'electronics', amount: 500 }, // Unlocks with electronics
+
+    // Drone server-specific properties
+    roomsPerHouse: 1, // Start with 1 server rack
+    workersPerRoom: 2, // Max drones per rack (very efficient)
+    workerGenerationTime: 60, // seconds to deploy 1 drone
+    workerType: 'droneWorker', // Produces drones
+
+    // Upgrades
+    upgrades: [
+      {
+        id: 'drone_extra_rack',
+        name: 'Extra Server Rack',
+        description: 'Add another rack (2 more drones)',
+        cost: { electronics: 300, circuit: 150, aiCore: 3 },
+        effect: { roomsPerHouse: 1 },
+        maxLevel: 3
+      },
+      {
+        id: 'drone_faster_deployment',
+        name: 'AI Optimization',
+        description: 'Faster drone deployment (-15s deployment time)',
+        cost: { aiCore: 10, algorithm: 5 },
+        effect: { workerGenerationTime: -15 },
+        maxLevel: 3
       }
     ]
   }
