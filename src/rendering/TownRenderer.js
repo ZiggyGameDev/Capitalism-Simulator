@@ -28,6 +28,10 @@ export class TownRenderer {
     // Animated workers - they walk around the entire town now!
     this.workers = []
     this.lastWorkerUpdate = 0
+    this.cachedWorkerCount = 0 // Cache to avoid recounting every frame
+
+    // Cache background gradient to avoid recreating every frame
+    this.backgroundGradient = null
 
     console.log('✅ [TownRenderer] Initialized')
   }
@@ -58,13 +62,15 @@ export class TownRenderer {
    * Draw background
    */
   drawBackground() {
-    // Sky gradient
-    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.height)
-    gradient.addColorStop(0, '#87CEEB') // Sky blue
-    gradient.addColorStop(0.7, '#c9d6df') // Light gray blue
-    gradient.addColorStop(1, '#90a955') // Grass green
+    // Cache gradient to avoid recreating it every frame
+    if (!this.backgroundGradient) {
+      this.backgroundGradient = this.ctx.createLinearGradient(0, 0, 0, this.height)
+      this.backgroundGradient.addColorStop(0, '#87CEEB') // Sky blue
+      this.backgroundGradient.addColorStop(0.7, '#c9d6df') // Light gray blue
+      this.backgroundGradient.addColorStop(1, '#90a955') // Grass green
+    }
 
-    this.ctx.fillStyle = gradient
+    this.ctx.fillStyle = this.backgroundGradient
     this.ctx.fillRect(0, 0, this.width, this.height)
   }
 
@@ -229,18 +235,29 @@ export class TownRenderer {
       { id: 'farmer', icon: '🌾', name: 'Farmers' }
     ]
 
-    // Calculate total workers needed
-    let totalWorkersNeeded = 0
-    workerTypes.forEach(type => {
-      totalWorkersNeeded += resourceManager.get(type.id) || 0
-    })
+    // Only recalculate worker count every 500ms to reduce overhead
+    const now = Date.now()
+    if (now - this.lastWorkerUpdate > 500) {
+      this.lastWorkerUpdate = now
 
-    // Add or remove workers to match count
-    while (this.workers.length < totalWorkersNeeded) {
-      this.spawnWorker(workerTypes)
-    }
-    while (this.workers.length > totalWorkersNeeded) {
-      this.workers.pop()
+      // Calculate total workers needed
+      let totalWorkersNeeded = 0
+      workerTypes.forEach(type => {
+        totalWorkersNeeded += resourceManager.get(type.id) || 0
+      })
+
+      // Only update if count changed
+      if (totalWorkersNeeded !== this.cachedWorkerCount) {
+        this.cachedWorkerCount = totalWorkersNeeded
+
+        // Add or remove workers to match count
+        while (this.workers.length < totalWorkersNeeded) {
+          this.spawnWorker(workerTypes)
+        }
+        while (this.workers.length > totalWorkersNeeded) {
+          this.workers.pop()
+        }
+      }
     }
 
     // Update existing workers
@@ -428,6 +445,9 @@ export class TownRenderer {
     // Recalculate grid - use full height
     this.cellWidth = this.width / this.gridColumns
     this.cellHeight = this.height / this.gridRows
+
+    // Invalidate cached gradient to force recreation with new dimensions
+    this.backgroundGradient = null
   }
 
   /**
