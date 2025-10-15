@@ -503,8 +503,10 @@ function createActivityElement(activity) {
     if (row) {
       cached.workerCounts.set(workerType.id, row.querySelector('.worker-count'))
       cached.workerButtons.set(workerType.id, {
+        minus10: row.querySelector('.worker-btn-minus-10'),
         minus: row.querySelector('.worker-btn-minus'),
-        plus: row.querySelector('.worker-btn-plus')
+        plus: row.querySelector('.worker-btn-plus'),
+        plus10: row.querySelector('.worker-btn-plus-10')
       })
     }
   })
@@ -547,9 +549,11 @@ function createWorkerControlsHTML(activity, unlocked) {
         <div class="worker-assignment-row" data-worker-row="${workerType.id}">
           <span class="worker-type-name">${resources[workerType.id].icon} ${resources[workerType.id].name} (<span class="worker-total">${total}</span>)</span>
           <div class="worker-controls">
+            <button class="worker-btn-minus-10" data-activity="${activity.id}" data-worker="${workerType.id}">--</button>
             <button class="worker-btn-minus" data-activity="${activity.id}" data-worker="${workerType.id}">-</button>
             <span class="worker-count">${assigned}</span>
             <button class="worker-btn-plus" data-activity="${activity.id}" data-worker="${workerType.id}">+</button>
+            <button class="worker-btn-plus-10" data-activity="${activity.id}" data-worker="${workerType.id}">++</button>
           </div>
         </div>
       `
@@ -1008,8 +1012,12 @@ function updateActivityState(activityId) {
   cached.workerButtons.forEach((buttons, workerTypeId) => {
     const assigned = workerAssignments[workerTypeId] || 0
     const available = game.workerManager.getAvailableWorkers(workerTypeId)
-    buttons.minus.disabled = assigned === 0
-    buttons.plus.disabled = available === 0
+
+    // Update all button states
+    if (buttons.minus10) buttons.minus10.disabled = assigned === 0
+    if (buttons.minus) buttons.minus.disabled = assigned === 0
+    if (buttons.plus) buttons.plus.disabled = available === 0
+    if (buttons.plus10) buttons.plus10.disabled = available === 0
   })
 }
 
@@ -1277,8 +1285,25 @@ function updateWorkerPanel() {
 function handleActivityClick(e) {
   const target = e.target
 
+  // Handle plus 10 button
+  if (target.classList.contains('worker-btn-plus-10')) {
+    e.preventDefault()
+    const activityId = target.dataset.activity
+    const workerTypeId = target.dataset.worker
+    const current = game.workerManager.getAssignment(activityId, workerTypeId)
+    const available = game.workerManager.getAvailableWorkers(workerTypeId)
+    const toAdd = Math.min(10, available)
+
+    if (toAdd > 0 && !target.disabled) {
+      // Temporarily disable to prevent double-clicks
+      target.disabled = true
+      game.workerManager.assign(activityId, workerTypeId, current + toAdd)
+      // Note: Button state will be properly updated by updateActivityState() via worker:assigned event
+    }
+  }
+
   // Handle plus button
-  if (target.classList.contains('worker-btn-plus')) {
+  else if (target.classList.contains('worker-btn-plus')) {
     e.preventDefault()
     const activityId = target.dataset.activity
     const workerTypeId = target.dataset.worker
@@ -1290,6 +1315,22 @@ function handleActivityClick(e) {
       target.disabled = true
       game.workerManager.assign(activityId, workerTypeId, current + 1)
       // Note: Button state will be properly updated by updateActivityState() via worker:assigned event
+    }
+  }
+
+  // Handle minus 10 button
+  else if (target.classList.contains('worker-btn-minus-10')) {
+    e.preventDefault()
+    const activityId = target.dataset.activity
+    const workerTypeId = target.dataset.worker
+    const current = game.workerManager.getAssignment(activityId, workerTypeId)
+    const toRemove = Math.min(10, current)
+
+    if (toRemove > 0 && !target.disabled) {
+      // Temporarily disable to prevent double-clicks
+      target.disabled = true
+      game.workerManager.assign(activityId, workerTypeId, current - toRemove)
+      // Note: Button state will be properly updated by updateActivityState() via worker:unassigned event
     }
   }
 
