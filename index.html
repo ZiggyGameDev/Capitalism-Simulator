@@ -15,7 +15,11 @@
         <h1>⛏️ Idle Clicker Game</h1>
       </div>
       <div class="game-controls">
-        <button id="muteBtn" class="btn-mute" title="Toggle music">🔊</button>
+        <div class="volume-control">
+          <button id="muteBtn" class="btn-mute" title="Toggle music">🔊</button>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="30" title="Music volume">
+          <span class="volume-label">🎵</span>
+        </div>
         <button id="debugBtn" class="btn-debug" title="Toggle debug panel">🛠️</button>
       </div>
     </div>

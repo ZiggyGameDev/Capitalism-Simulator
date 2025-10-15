@@ -212,6 +212,15 @@ function setupEventListeners() {
     })
   }
 
+  // Volume slider
+  const volumeSlider = document.getElementById('volumeSlider')
+  if (volumeSlider) {
+    volumeSlider.addEventListener('input', (e) => {
+      const volume = parseInt(e.target.value) / 100 // Convert 0-100 to 0-1
+      game.audioManager.setMusicVolume(volume)
+    })
+  }
+
   // Debug button
   const debugBtn = document.getElementById('debugBtn')
   const debugPanel = document.getElementById('debugPanel')

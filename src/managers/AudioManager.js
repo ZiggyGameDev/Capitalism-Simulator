@@ -16,18 +16,30 @@ export class AudioManager {
     // Background music oscillator
     this.musicOscillators = []
     this.musicInterval = null
-    this.currentNote = 0
+    this.chordInterval = null
+    this.melodyInterval = null
+    this.currentChord = 0
+    this.currentMelodyNote = 0
 
-    // Pentatonic scale for pleasant background music (C major pentatonic)
-    this.musicScale = [
-      261.63, // C4
-      293.66, // D4
-      329.63, // E4
-      392.00, // G4
-      440.00, // A4
-      523.25, // C5
-      587.33, // D5
-      659.25, // E5
+    // Chord progression: I - V - vi - IV (C - G - Am - F)
+    // Very popular and pleasant progression used in many games and songs
+    this.chordProgression = [
+      // C major (I)
+      [261.63, 329.63, 392.00], // C4, E4, G4
+      // G major (V)
+      [196.00, 246.94, 293.66], // G3, B3, D4
+      // A minor (vi)
+      [220.00, 261.63, 329.63], // A3, C4, E4
+      // F major (IV)
+      [174.61, 220.00, 261.63], // F3, A3, C4
+    ]
+
+    // Melody line that plays over the chords
+    this.melody = [
+      523.25, 659.25, 587.33, 523.25, // C5, E5, D5, C5
+      392.00, 523.25, 440.00, 392.00, // G4, C5, A4, G4
+      440.00, 523.25, 587.33, 659.25, // A4, C5, D5, E5
+      523.25, 440.00, 392.00, 329.63, // C5, A4, G4, E4
     ]
 
     console.log('🎵 [AudioManager] Initialized')
@@ -58,13 +70,23 @@ export class AudioManager {
    */
   startMusic() {
     if (!this.audioContext) this.init()
-    if (this.musicInterval) return // Already playing
+    if (this.chordInterval) return // Already playing
 
-    // Play ambient background notes
-    this.musicInterval = setInterval(() => {
-      this.playMusicNote()
-      this.currentNote = (this.currentNote + 1) % this.musicScale.length
-    }, 800) // Play a note every 800ms
+    // Play chords (every 2 seconds)
+    this.chordInterval = setInterval(() => {
+      this.playChord()
+      this.currentChord = (this.currentChord + 1) % this.chordProgression.length
+    }, 2000)
+
+    // Play melody notes (every 500ms)
+    this.melodyInterval = setInterval(() => {
+      this.playMelodyNote()
+      this.currentMelodyNote = (this.currentMelodyNote + 1) % this.melody.length
+    }, 500)
+
+    // Play initial chord and melody
+    this.playChord()
+    this.playMelodyNote()
 
     console.log('🎵 [AudioManager] Music started')
   }
@@ -73,9 +95,13 @@ export class AudioManager {
    * Stop background music
    */
   stopMusic() {
-    if (this.musicInterval) {
-      clearInterval(this.musicInterval)
-      this.musicInterval = null
+    if (this.chordInterval) {
+      clearInterval(this.chordInterval)
+      this.chordInterval = null
+    }
+    if (this.melodyInterval) {
+      clearInterval(this.melodyInterval)
+      this.melodyInterval = null
     }
 
     // Stop all music oscillators
@@ -92,23 +118,67 @@ export class AudioManager {
   }
 
   /**
-   * Play a single music note
+   * Play a chord (multiple notes together)
    */
-  playMusicNote() {
+  playChord() {
+    if (!this.audioContext || this.muted) return
+
+    const now = this.audioContext.currentTime
+    const chord = this.chordProgression[this.currentChord]
+
+    // Play each note in the chord
+    chord.forEach((frequency, i) => {
+      const oscillator = this.audioContext.createOscillator()
+      const gainNode = this.audioContext.createGain()
+
+      // Use triangle wave for warm, soft chords
+      oscillator.type = 'triangle'
+      oscillator.frequency.value = frequency
+
+      // Soft envelope for background chords
+      const volume = 0.06 // Quieter than before
+      gainNode.gain.setValueAtTime(0, now)
+      gainNode.gain.linearRampToValueAtTime(volume, now + 0.3)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 1.8)
+
+      // Connect nodes
+      oscillator.connect(gainNode)
+      gainNode.connect(this.musicGainNode)
+
+      // Play
+      oscillator.start(now)
+      oscillator.stop(now + 2.0)
+
+      this.musicOscillators.push(oscillator)
+
+      // Clean up after it stops
+      setTimeout(() => {
+        const index = this.musicOscillators.indexOf(oscillator)
+        if (index > -1) {
+          this.musicOscillators.splice(index, 1)
+        }
+      }, 2100)
+    })
+  }
+
+  /**
+   * Play a melody note
+   */
+  playMelodyNote() {
     if (!this.audioContext || this.muted) return
 
     const now = this.audioContext.currentTime
     const oscillator = this.audioContext.createOscillator()
     const gainNode = this.audioContext.createGain()
 
-    // Use a warm sine wave for pleasant ambient sound
+    // Use sine wave for clear, bell-like melody
     oscillator.type = 'sine'
-    oscillator.frequency.value = this.musicScale[this.currentNote]
+    oscillator.frequency.value = this.melody[this.currentMelodyNote]
 
-    // Envelope: fade in and fade out
+    // Quick attack and decay for melody notes
     gainNode.gain.setValueAtTime(0, now)
-    gainNode.gain.linearRampToValueAtTime(0.1, now + 0.1)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.7)
+    gainNode.gain.linearRampToValueAtTime(0.08, now + 0.02)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4)
 
     // Connect nodes
     oscillator.connect(gainNode)
@@ -116,7 +186,7 @@ export class AudioManager {
 
     // Play
     oscillator.start(now)
-    oscillator.stop(now + 0.8)
+    oscillator.stop(now + 0.5)
 
     this.musicOscillators.push(oscillator)
 
@@ -126,7 +196,7 @@ export class AudioManager {
       if (index > -1) {
         this.musicOscillators.splice(index, 1)
       }
-    }, 1000)
+    }, 600)
   }
 
   /**
