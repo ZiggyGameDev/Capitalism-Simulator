@@ -22,6 +22,10 @@ export class GameEngine {
     this.activityManager = new ActivityManager(activityDefinitions, this.resourceManager, this.skillManager, this.eventBus, this.upgradeManager, this.workerManager)
     this.audioManager = new AudioManager()
 
+    // Link building manager for bonuses (must happen after all managers are created)
+    this.resourceManager.buildingManager = this.buildingManager
+    this.activityManager.buildingManager = this.buildingManager
+
     // Listen for resource changes to track mined amounts
     this.eventBus.on('activity:completed', (data) => {
       if (data.outputs) {
@@ -40,20 +44,8 @@ export class GameEngine {
       this.audioManager.playLevelUpSound()
     })
 
-    this.eventBus.on('building:construction_complete', (data) => {
+    this.eventBus.on('building:construction_complete', () => {
       this.audioManager.playSuccessSound()
-
-      // Apply storage bonus for warehouses
-      if (data.buildingTypeId === 'warehouse') {
-        const warehouseType = this.buildingManager.buildingTypes.find(b => b.id === 'warehouse')
-        if (warehouseType && warehouseType.storageBonus) {
-          // Apply storage bonus to ALL resources
-          const allResourceIds = Object.keys(this.resourceManager.getAll())
-          allResourceIds.forEach(resourceId => {
-            this.resourceManager.addStorageBonus(resourceId, warehouseType.storageBonus)
-          })
-        }
-      }
     })
 
     this.isRunning = false

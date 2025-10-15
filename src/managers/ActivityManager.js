@@ -244,6 +244,15 @@ export class ActivityManager {
       duration = duration / workerSpeedMultiplier
     }
 
+    // Apply building speed bonus (tavern workerSpeedBonus)
+    if (this.buildingManager) {
+      const buildingSpeedBonus = this.buildingManager.getBuildingBonus('workerSpeedBonus')
+      if (buildingSpeedBonus > 0) {
+        // Speed bonus reduces duration: 0.1 = 10% faster = 90% of original duration
+        duration = duration * (1 - buildingSpeedBonus)
+      }
+    }
+
     return duration
   }
 
@@ -267,6 +276,16 @@ export class ActivityManager {
       }
     }
 
+    // Apply building cost reduction (blacksmith costReduction)
+    if (this.buildingManager) {
+      const buildingCostReduction = this.buildingManager.getBuildingBonus('costReduction')
+      if (buildingCostReduction > 0) {
+        for (const [resourceId, amount] of Object.entries(inputs)) {
+          inputs[resourceId] = Math.max(0, Math.floor(amount * (1 - buildingCostReduction)))
+        }
+      }
+    }
+
     return inputs
   }
 
@@ -285,6 +304,17 @@ export class ActivityManager {
       const outputBonus = this.upgradeManager.getOutputBonus(activityId)
       for (const [resourceId, bonusAmount] of Object.entries(outputBonus)) {
         outputs[resourceId] = (outputs[resourceId] || 0) + bonusAmount
+      }
+    }
+
+    // Apply building resource bonus (blacksmith resourceBonus)
+    if (this.buildingManager) {
+      const buildingResourceBonus = this.buildingManager.getBuildingBonus('resourceBonus')
+      if (buildingResourceBonus > 0) {
+        // Resource bonus increases all outputs by percentage: 0.15 = 15% more
+        for (const [resourceId, amount] of Object.entries(outputs)) {
+          outputs[resourceId] = Math.floor(amount * (1 + buildingResourceBonus))
+        }
       }
     }
 

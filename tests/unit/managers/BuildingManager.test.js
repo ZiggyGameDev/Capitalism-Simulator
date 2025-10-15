@@ -20,7 +20,7 @@ describe('BuildingManager', () => {
     })
 
     it('should initialize with starting slots', () => {
-      expect(buildingManager.availableSlots).toBe(5)
+      expect(buildingManager.availableSlots).toBe(16)
       expect(buildingManager.usedSlots).toBe(0)
     })
 
@@ -162,9 +162,12 @@ describe('BuildingManager', () => {
       resourceManager.set('wood', 10000)
       resourceManager.set('stone', 10000)
 
-      // Fill all 5 starting slots
-      for (let i = 0; i < 5; i++) {
-        buildingManager.startConstruction('house')
+      // Fill all 16 starting slots (mix of houses and warehouses to avoid maxCount)
+      for (let i = 0; i < 10; i++) {
+        buildingManager.startConstruction('house') // Max 10 houses
+      }
+      for (let i = 0; i < 6; i++) {
+        buildingManager.startConstruction('warehouse') // 6 warehouses
       }
 
       const result = buildingManager.canBuild('house')
@@ -664,7 +667,7 @@ describe('BuildingManager', () => {
       resourceManager.set('stone', 1000)
 
       buildingManager.startConstruction('house')
-      buildingManager.availableSlots = 10
+      buildingManager.availableSlots = 20 // Higher than starting slots (16)
 
       const state = buildingManager.getState()
 
@@ -672,7 +675,7 @@ describe('BuildingManager', () => {
       newManager.loadState(state)
 
       expect(newManager.usedSlots).toBe(1)
-      expect(newManager.availableSlots).toBe(10)
+      expect(newManager.availableSlots).toBe(20) // Should restore the higher value
     })
 
     it('should save and restore house worker timers', () => {
@@ -999,7 +1002,7 @@ describe('BuildingManager', () => {
       buildingManager.reset()
 
       expect(buildingManager.usedSlots).toBe(0)
-      expect(buildingManager.availableSlots).toBe(5) // Back to starting slots
+      expect(buildingManager.availableSlots).toBe(16) // Back to starting slots (4x4 grid)
     })
 
     it('should clear house worker timers', () => {

@@ -3,11 +3,12 @@
  * Resources are just numbers - no inventory complexity
  */
 export class ResourceManager {
-  constructor(eventBus = null) {
+  constructor(eventBus = null, buildingManager = null) {
     this.resources = {}
     this.eventBus = eventBus
+    this.buildingManager = buildingManager // Reference to building manager for bonuses
     this.baseStorageLimit = 100 // Default storage limit for all resources
-    this.storageBonuses = {} // Additional storage from buildings
+    this.storageBonuses = {} // Additional storage from buildings (per-resource)
   }
 
   /**
@@ -16,8 +17,14 @@ export class ResourceManager {
    * @returns {number} Storage limit
    */
   getStorageLimit(resourceId) {
-    const bonus = this.storageBonuses[resourceId] || 0
-    return this.baseStorageLimit + bonus
+    const perResourceBonus = this.storageBonuses[resourceId] || 0
+
+    // Get global storage bonus from warehouses
+    const warehouseBonus = this.buildingManager
+      ? this.buildingManager.getBuildingBonus('storageBonus')
+      : 0
+
+    return this.baseStorageLimit + perResourceBonus + warehouseBonus
   }
 
   /**
