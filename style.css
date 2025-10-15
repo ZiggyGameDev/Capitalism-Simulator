@@ -837,6 +837,51 @@ body {
   border-radius: 4px;
 }
 
+/* ========== MOBILE RESPONSIVE DESIGN ========== */
+
+/* Mobile: Show tabs and enable tab switching */
+@media (max-width: 1023px) {
+  /* Show tab navigation on mobile */
+  .tab-navigation {
+    display: flex !important;
+    gap: 4px;
+    padding: 10px 20px;
+    background: #1a1a2e;
+    border-bottom: 2px solid #2d3748;
+  }
+
+  /* Tab switching - hide/show content based on active tab */
+  .tab-content {
+    display: none !important;
+  }
+
+  .tab-content.active {
+    display: flex !important;
+  }
+
+  /* Stack layout vertically on mobile */
+  .game-main {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+
+  /* Make panels scrollable on mobile */
+  .skill-panel, .activity-panel, .right-column {
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  /* Town panel - smaller on mobile */
+  .town-panel {
+    min-height: 300px;
+    max-height: 400px;
+  }
+
+  .town-canvas {
+    min-height: 250px;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .game-main {
@@ -901,13 +946,9 @@ body {
   background: #b087d8;
 }
 
-/* Tab Navigation */
+/* Tab Navigation - Hidden on desktop, visible on mobile */
 .tab-navigation {
-  display: flex;
-  gap: 4px;
-  padding: 10px 20px;
-  background: #1a1a2e;
-  border-bottom: 2px solid #2d3748;
+  display: none; /* Hidden by default on desktop */
 }
 
 .tab-button {
@@ -932,59 +973,23 @@ body {
   color: white;
 }
 
-/* Tab Content */
-.tab-content {
-  display: none;
+/* Tab Content - Buildings view hidden on desktop */
+.building-view {
+  display: none !important; /* Hidden on desktop - town is always visible in main view */
 }
 
-.tab-content.active {
-  display: flex;
+.game-main {
+  display: grid !important; /* Always show main view on desktop */
 }
 
-/* Widescreen: Show both views side by side */
-@media (min-width: 1600px) {
-  .tab-navigation {
-    display: none;
+/* Desktop: Optimize town panel size in right column */
+@media (min-width: 1024px) {
+  .town-panel {
+    max-height: 350px; /* Limit height on desktop so it doesn't dominate */
   }
 
-  .tab-content {
-    display: flex !important;
-    flex: 1;
-  }
-
-  /* Split view container */
-  .split-view-container {
-    display: flex;
-    gap: 20px;
-    width: 100%;
-  }
-
-  .split-view-container > .tab-content {
-    flex: 1;
-    min-width: 0;
-  }
-}
-
-/* City View Layout */
-.city-view {
-  gap: 20px;
-  padding: 20px;
-  height: calc(100vh - 180px);
-}
-
-/* Widescreen adjustments for split view */
-@media (min-width: 1600px) {
-  .game-main {
-    min-height: calc(100vh - 200px);
-  }
-
-  .city-view {
-    height: calc(100vh - 200px);
-  }
-
-  .game-container {
-    max-width: 100%;
-    padding: 10px 20px;
+  .right-column {
+    max-height: 100%;
   }
 }
 

@@ -265,12 +265,12 @@ function switchTab(tabName) {
     content.classList.toggle('active', content.dataset.view === tabName)
   })
 
-  // When switching to city tab, resize canvas to fit properly
-  if (tabName === 'city' && townRenderer) {
+  // On mobile, resize canvas when switching to activities tab (where town is visible)
+  if (tabName === 'activities' && townRenderer) {
     // Wait for layout to complete
     setTimeout(() => {
       const townCanvas = document.getElementById('townCanvas')
-      if (townCanvas) {
+      if (townCanvas && townCanvas.offsetParent !== null) { // Only if visible
         const newWidth = townCanvas.clientWidth || 800
         const newHeight = townCanvas.clientHeight || 600
         townRenderer.resize(newWidth, newHeight)
@@ -278,7 +278,7 @@ function switchTab(tabName) {
         townRenderer.lastWorkerUpdate = 0
         townRenderer.cachedWorkerCount = 0
         townRenderer.render() // Force a render after resize
-        console.log(`[TownRenderer] Switched to city tab - Canvas: ${newWidth}x${newHeight}, Workers should respawn`)
+        console.log(`[TownRenderer] Switched to activities tab - Canvas: ${newWidth}x${newHeight}, Workers should respawn`)
       }
     }, 50)
   }
@@ -1268,8 +1268,8 @@ function startSimulationRenderLoop() {
       simulation.render(deltaTime)
     })
 
-    // Render town canvas with animation
-    if (townRenderer && currentTab === 'city') {
+    // Render town canvas with animation (always render - it's visible in main view)
+    if (townRenderer) {
       townRenderer.render(deltaTime)
     }
 
