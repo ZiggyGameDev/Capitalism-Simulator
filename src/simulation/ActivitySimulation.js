@@ -55,6 +55,9 @@ export class ActivitySimulation {
       targetCount += count
     }
 
+    // Check if worker count changed
+    const countChanged = this.workers.length !== targetCount
+
     // Spawn new workers if needed
     while (this.workers.length < targetCount) {
       this.spawnWorker()
@@ -64,6 +67,28 @@ export class ActivitySimulation {
     while (this.workers.length > targetCount) {
       this.workers.pop()
     }
+
+    // When worker count changes, update all workers' timings to match new speed
+    if (countChanged && this.workers.length > 0) {
+      this.updateWorkerTimings()
+    }
+  }
+
+  /**
+   * Calculate effective harvest time based on worker speed multiplier
+   */
+  calculateHarvestTime() {
+    const baseDuration = this.activity.duration
+    const speedMultiplier = this.workerManager.getSpeedMultiplier(this.activity.id, this.activity.skillId)
+
+    // If no workers or speed is 0, use base duration
+    if (speedMultiplier === 0) {
+      return baseDuration * 1000
+    }
+
+    // Calculate effective duration (speed multiplier makes it faster)
+    const effectiveDuration = baseDuration / speedMultiplier
+    return effectiveDuration * 1000 // Convert to ms
   }
 
   /**
@@ -71,7 +96,7 @@ export class ActivitySimulation {
    */
   spawnWorker() {
     // Calculate pre-determined timing with speed variation
-    const harvestTime = this.activity.duration * 1000 // Convert to ms
+    const harvestTime = this.calculateHarvestTime()
     const baseWalkSpeed = 80 // pixels per second
     const speedVariation = 0.7 + Math.random() * 0.6 // 70% to 130% of base speed
     const walkSpeed = baseWalkSpeed * speedVariation
@@ -106,6 +131,33 @@ export class ActivitySimulation {
     }
 
     this.workers.push(worker)
+  }
+
+  /**
+   * Update all workers' harvest timings when worker count changes
+   * This ensures animation speed matches actual activity speed
+   */
+  updateWorkerTimings() {
+    const newHarvestTime = this.calculateHarvestTime()
+
+    this.workers.forEach(worker => {
+      // Calculate ratio of old to new harvest time
+      const oldHarvestTime = worker.harvestTime
+      const ratio = newHarvestTime / oldHarvestTime
+
+      // Update harvest time
+      worker.harvestTime = newHarvestTime
+
+      // Update total cycle time
+      worker.totalCycleTime = worker.walkToTime + worker.harvestTime + worker.walkBackTime
+
+      // Adjust worker's current progress if they're harvesting
+      // This keeps the animation smooth during the transition
+      if (worker.state === 'harvesting') {
+        // Scale the timer to maintain relative progress
+        worker.stateTimer = worker.stateTimer / ratio
+      }
+    })
   }
 
   /**
