@@ -179,6 +179,12 @@ export class TownRenderer {
         this.drawBuilding(instance, buildingTypeId)
       })
     }
+
+    // DEBUG: Log if we have buildings to render
+    const totalBuildings = Object.values(buildingManager.buildings).reduce((sum, arr) => sum + arr.length, 0)
+    if (totalBuildings > 0) {
+      console.log(`[TownRenderer] Rendering ${totalBuildings} buildings`)
+    }
   }
 
   /**
@@ -433,6 +439,11 @@ export class TownRenderer {
    * Draw animated workers (OPTIMIZED with emoji cache + pixel snapping)
    */
   drawAnimatedWorkers() {
+    // DEBUG: Log worker count
+    if (this.workers.length > 0) {
+      console.log(`[TownRenderer] Drawing ${this.workers.length} workers`)
+    }
+
     // Draw each worker
     this.workers.forEach(worker => {
       // PERFORMANCE: Use integer coordinates to prevent sub-pixel rendering (2-3x faster!)
@@ -452,6 +463,7 @@ export class TownRenderer {
         // Draw worker icon from cached canvas (10-50x faster than fillText!)
         this.ctx.drawImage(emojiCanvas, x - halfSize, y - halfSize)
       } else {
+        console.warn(`[TownRenderer] Using fillText fallback for worker ${worker.icon}`)
         // Fallback to fillText
         this.ctx.font = '28px Arial'
         this.ctx.textAlign = 'center'
