@@ -1686,6 +1686,25 @@ button:active::before {
   opacity: 0.6;
 }
 
+/* Sparkle effect for newly unlocked items */
+@keyframes sparkle {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(251, 191, 36, 0.4), 0 0 10px rgba(251, 191, 36, 0.3), 0 0 15px rgba(251, 191, 36, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.6), 0 0 20px rgba(251, 191, 36, 0.5), 0 0 30px rgba(251, 191, 36, 0.4);
+  }
+}
+
+.newly-unlocked {
+  animation: sparkle 2s ease-in-out infinite;
+  border-color: #fbbf24 !important;
+}
+
+.newly-unlocked:hover {
+  animation: none;
+}
+
 /* Enhanced notifications */
 .notification {
   animation: slideInBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
