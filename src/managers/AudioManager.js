@@ -130,7 +130,7 @@ export class AudioManager {
   }
 
   /**
-   * Play button click sound effect
+   * Play button click sound effect (neutral buttons)
    */
   playClickSound() {
     if (!this.audioContext || this.muted) return
@@ -151,6 +151,100 @@ export class AudioManager {
 
     oscillator.start(now)
     oscillator.stop(now + 0.1)
+  }
+
+  /**
+   * Play plus/add button sound (construction hammer tap)
+   */
+  playPlusButtonSound() {
+    if (!this.audioContext || this.muted) return
+
+    const now = this.audioContext.currentTime
+
+    // Hammer tap sound: sharp percussive hit with wood/metal resonance
+    // Base impact
+    const noise = this.audioContext.createOscillator()
+    const noiseGain = this.audioContext.createGain()
+    const noiseFilter = this.audioContext.createBiquadFilter()
+
+    noise.type = 'square'
+    noise.frequency.setValueAtTime(150, now)
+    noise.frequency.exponentialRampToValueAtTime(80, now + 0.05)
+
+    noiseFilter.type = 'bandpass'
+    noiseFilter.frequency.value = 400
+    noiseFilter.Q.value = 2
+
+    noiseGain.gain.setValueAtTime(0.4, now)
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08)
+
+    noise.connect(noiseFilter)
+    noiseFilter.connect(noiseGain)
+    noiseGain.connect(this.sfxGainNode)
+
+    noise.start(now)
+    noise.stop(now + 0.08)
+
+    // Resonant tone (wood/metal ring)
+    const tone = this.audioContext.createOscillator()
+    const toneGain = this.audioContext.createGain()
+
+    tone.type = 'triangle'
+    tone.frequency.setValueAtTime(600, now + 0.01)
+    tone.frequency.exponentialRampToValueAtTime(550, now + 0.15)
+
+    toneGain.gain.setValueAtTime(0.15, now + 0.01)
+    toneGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15)
+
+    tone.connect(toneGain)
+    toneGain.connect(this.sfxGainNode)
+
+    tone.start(now + 0.01)
+    tone.stop(now + 0.15)
+  }
+
+  /**
+   * Play minus/remove button sound (removal/demolish)
+   */
+  playMinusButtonSound() {
+    if (!this.audioContext || this.muted) return
+
+    const now = this.audioContext.currentTime
+
+    // Removal sound: descending tone with softer attack
+    // First tone (higher)
+    const tone1 = this.audioContext.createOscillator()
+    const gain1 = this.audioContext.createGain()
+
+    tone1.type = 'triangle'
+    tone1.frequency.setValueAtTime(500, now)
+    tone1.frequency.exponentialRampToValueAtTime(300, now + 0.12)
+
+    gain1.gain.setValueAtTime(0.2, now)
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.12)
+
+    tone1.connect(gain1)
+    gain1.connect(this.sfxGainNode)
+
+    tone1.start(now)
+    tone1.stop(now + 0.12)
+
+    // Second tone (lower) - slight delay for texture
+    const tone2 = this.audioContext.createOscillator()
+    const gain2 = this.audioContext.createGain()
+
+    tone2.type = 'sine'
+    tone2.frequency.setValueAtTime(350, now + 0.02)
+    tone2.frequency.exponentialRampToValueAtTime(200, now + 0.14)
+
+    gain2.gain.setValueAtTime(0.15, now + 0.02)
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.14)
+
+    tone2.connect(gain2)
+    gain2.connect(this.sfxGainNode)
+
+    tone2.start(now + 0.02)
+    tone2.stop(now + 0.14)
   }
 
   /**

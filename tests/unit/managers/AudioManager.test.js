@@ -29,6 +29,12 @@ describe('AudioManager', () => {
         start: vi.fn(),
         stop: vi.fn()
       })),
+      createBiquadFilter: vi.fn(() => ({
+        type: 'lowpass',
+        frequency: { value: 0 },
+        Q: { value: 1 },
+        connect: vi.fn()
+      })),
       destination: {},
       currentTime: 0
     }))
@@ -111,6 +117,14 @@ describe('AudioManager', () => {
 
     it('should play collect sound without errors', () => {
       expect(() => audioManager.playCollectSound()).not.toThrow()
+    })
+
+    it('should play plus button sound without errors', () => {
+      expect(() => audioManager.playPlusButtonSound()).not.toThrow()
+    })
+
+    it('should play minus button sound without errors', () => {
+      expect(() => audioManager.playMinusButtonSound()).not.toThrow()
     })
 
     it('should not play sounds when muted', () => {

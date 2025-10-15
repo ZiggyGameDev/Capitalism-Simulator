@@ -141,10 +141,25 @@ function cleanupGameListeners() {
 window.cleanupGameListeners = cleanupGameListeners
 
 function setupEventListeners() {
-  // Add click sound to all buttons
+  // Add appropriate click sounds to buttons based on their function
   document.addEventListener('click', (e) => {
     if (e.target.tagName === 'BUTTON') {
-      game.audioManager.playClickSound()
+      // Plus buttons (adding/building/incrementing)
+      if (e.target.classList.contains('worker-btn-plus') ||
+          e.target.classList.contains('btn-build') ||
+          e.target.classList.contains('btn-upgrade') ||
+          e.target.textContent.includes('+')) {
+        game.audioManager.playPlusButtonSound()
+      }
+      // Minus buttons (removing/decrementing)
+      else if (e.target.classList.contains('worker-btn-minus') ||
+               e.target.textContent.includes('-')) {
+        game.audioManager.playMinusButtonSound()
+      }
+      // All other buttons
+      else {
+        game.audioManager.playClickSound()
+      }
     }
   })
 

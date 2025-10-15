@@ -41,6 +41,40 @@ export const buildingTypes = [
   },
 
   {
+    id: 'warehouse',
+    name: 'Warehouse',
+    emoji: '📦',
+    description: 'Increases storage capacity for all resources',
+    baseCost: { wood: 30, stone: 20 },
+    costMultiplier: 1.8,
+    constructionTime: 45,
+    maxCount: 10,
+    unlockCondition: null, // Always unlocked
+
+    // Warehouse-specific properties
+    storageBonus: 50, // Adds +50 to all resource storage
+
+    upgrades: [
+      {
+        id: 'warehouse_expansion',
+        name: 'Warehouse Expansion',
+        description: 'Adds +25 storage capacity',
+        cost: { wood: 50, stone: 40 },
+        effect: { storageBonus: 25 },
+        maxLevel: 5
+      },
+      {
+        id: 'warehouse_organization',
+        name: 'Better Organization',
+        description: 'Adds +50 storage capacity',
+        cost: { wood: 100, stone: 80, iron: 20 },
+        effect: { storageBonus: 50 },
+        maxLevel: 3
+      }
+    ]
+  },
+
+  {
     id: 'tavern',
     name: 'Tavern',
     emoji: '🍺',
@@ -107,40 +141,6 @@ export const buildingTypes = [
         cost: { iron: 200, gold: 100 },
         effect: { costReduction: 0.1 },
         maxLevel: 2
-      }
-    ]
-  },
-
-  {
-    id: 'warehouse',
-    name: 'Warehouse',
-    emoji: '📦',
-    description: 'Increases storage capacity for all resources',
-    baseCost: { wood: 30, stone: 20 },
-    costMultiplier: 1.8,
-    constructionTime: 45,
-    maxCount: 10,
-    unlockCondition: null, // Always unlocked
-
-    // Warehouse-specific properties
-    storageBonus: 50, // Adds +50 to all resource storage
-
-    upgrades: [
-      {
-        id: 'warehouse_expansion',
-        name: 'Warehouse Expansion',
-        description: 'Adds +25 storage capacity',
-        cost: { wood: 50, stone: 40 },
-        effect: { storageBonus: 25 },
-        maxLevel: 5
-      },
-      {
-        id: 'warehouse_organization',
-        name: 'Better Organization',
-        description: 'Adds +50 storage capacity',
-        cost: { wood: 100, stone: 80, iron: 20 },
-        effect: { storageBonus: 50 },
-        maxLevel: 3
       }
     ]
   },
