@@ -75,6 +75,17 @@ export const activities = [
     description: 'Breaking rocks with primitive tools'
   },
   {
+    id: 'mineGold',
+    name: 'Mine Gold',
+    skillId: 'gathering',
+    levelRequired: 3,
+    inputs: {},
+    outputs: { gold: 1 },
+    duration: 2.5,
+    xpGained: 12,
+    description: 'Searching for precious metal deposits'
+  },
+  {
     id: 'mineCoal',
     name: 'Mine Coal',
     skillId: 'gathering',
