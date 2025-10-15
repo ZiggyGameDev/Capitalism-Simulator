@@ -671,6 +671,10 @@ function buildUpgradeList() {
 
 function buildWorkerPanel() {
   const container = document.getElementById('workerPanel')
+  if (!container) {
+    console.warn('⚠️ [UI] workerPanel element not found in HTML')
+    return
+  }
   container.innerHTML = '<h3>Workers</h3><div id="workerSummaryList"></div>'
 }
 
