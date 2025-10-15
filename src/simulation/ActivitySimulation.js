@@ -603,7 +603,7 @@ export class ActivitySimulation {
     let attackOffset = 0
     let verticalOffset = 0
     let rotation = 0
-    let scale = 1
+    let scale = 1.3 // Increased base scale for better visibility
 
     if (worker.state === 'walking_to') {
       bobOffset = Math.sin(Date.now() / 150 + worker.id.charCodeAt(7)) * 3
@@ -753,12 +753,25 @@ export class ActivitySimulation {
     // Ensure fully opaque
     this.ctx.globalAlpha = 1.0
 
+    // Draw bright background circle behind worker for better visibility
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'
+    this.ctx.beginPath()
+    this.ctx.arc(x + attackOffset, y + bobOffset + verticalOffset, 12 * scale, 0, Math.PI * 2)
+    this.ctx.fill()
+
+    // Add glow effect to worker
+    this.ctx.shadowColor = '#ffffff'
+    this.ctx.shadowBlur = 8
+
     // Draw worker icon with all transformations
     const fontSize = Math.floor(16 * scale)
     this.ctx.font = `${fontSize}px Arial`
     this.ctx.textAlign = 'center'
     this.ctx.textBaseline = 'middle'
     this.ctx.fillText('👷', x + attackOffset, y + bobOffset + verticalOffset)
+
+    // Reset shadow for other elements
+    this.ctx.shadowBlur = 0
 
     // Draw carrying indicator (hide while flying resource is in progress)
     if (worker.carrying && !worker.waitingForResource) {
