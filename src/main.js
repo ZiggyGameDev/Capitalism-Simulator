@@ -1303,10 +1303,12 @@ function handleWorkerChanged(data) {
   updateWorkerSummary()
   updateWorkerPanel()
 
-  // Only update the specific activity that changed
-  if (data.activityId) {
-    updateActivityState(data.activityId)
-  }
+  // Update ALL activities on the current skill since worker availability has changed
+  // This ensures buttons on all activities reflect the new worker availability
+  // (e.g., when you remove a worker from Activity A, Activity B's plus button should enable)
+  activityElements.forEach((_, activityId) => {
+    updateActivityState(activityId)
+  })
 
   // Update skill resource indicators (pulsing emojis)
   updateSkillResourceIndicators()
