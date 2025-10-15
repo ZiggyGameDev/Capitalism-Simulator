@@ -307,7 +307,7 @@ describe('BuildingManager', () => {
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({
           buildingTypeId: 'house',
-          duration: 60
+          duration: 30 // House construction time is 30 seconds (from buildings.js)
         })
       )
     })
@@ -348,8 +348,8 @@ describe('BuildingManager', () => {
       buildingManager.startConstruction('house')
       const house = buildingManager.buildings['house'][0]
 
-      // Simulate only 30 seconds passing
-      house.constructionStartTime = Date.now() - 30000
+      // Simulate only 29 seconds passing (less than 30 second construction time)
+      house.constructionStartTime = Date.now() - 29000
 
       buildingManager.update(100)
 
