@@ -137,13 +137,13 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       expect(amountSpan.textContent).toBe('15')
     })
 
-    it('should handle all 36 currency types', () => {
+    it('should handle all 37 resource types', () => {
       const container = document.getElementById('currencyTicker')
       const allCurrencyIds = Object.keys(currencies)
 
-      expect(allCurrencyIds.length).toBe(36)
+      expect(allCurrencyIds.length).toBe(37)
 
-      // Add all currencies
+      // Add all resources
       allCurrencyIds.forEach((id, index) => {
         game.resourceManager.add(id, index + 1)
 
@@ -159,8 +159,8 @@ describe('UI Widget Visibility - Currency Ticker', () => {
         container.appendChild(div)
       })
 
-      // Verify all 36 are in DOM
-      expect(container.querySelectorAll('[data-currency-id]').length).toBe(36)
+      // Verify all 37 are in DOM
+      expect(container.querySelectorAll('[data-currency-id]').length).toBe(37)
     })
 
     it('should clear "No currencies" message when first currency appears', () => {
