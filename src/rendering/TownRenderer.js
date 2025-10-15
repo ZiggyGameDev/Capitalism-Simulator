@@ -82,6 +82,14 @@ export class TownRenderer {
       canvas.height = size + padding
       const ctx = canvas.getContext('2d', { alpha: true })
 
+      // CRITICAL: Check if context was created successfully
+      // In some environments (tests, old browsers) getContext may return null
+      if (!ctx) {
+        console.error(`[TownRenderer] Failed to get 2d context for emoji cache: ${emoji}`)
+        // Return null and handle in calling code
+        return null
+      }
+
       // Render emoji to offscreen canvas
       ctx.font = `${size}px Arial`
       ctx.textAlign = 'center'
@@ -222,11 +230,19 @@ export class TownRenderer {
     this.ctx.fillRect(x - 40, y - 40, 80, 80)
     this.ctx.globalAlpha = 1.0
 
-    // Draw building emoji fading in (using cached canvas)
+    // Draw building emoji fading in (using cached canvas or fallback to fillText)
     const buildingCanvas = this.getCachedEmoji(buildingType.emoji, 52)
-    const buildingHalfSize = Math.floor(buildingCanvas.width / 2)
     this.ctx.globalAlpha = progress
-    this.ctx.drawImage(buildingCanvas, x - buildingHalfSize, y - buildingHalfSize)
+    if (buildingCanvas) {
+      const buildingHalfSize = Math.floor(buildingCanvas.width / 2)
+      this.ctx.drawImage(buildingCanvas, x - buildingHalfSize, y - buildingHalfSize)
+    } else {
+      // Fallback to fillText if emoji cache failed
+      this.ctx.font = '52px Arial'
+      this.ctx.textAlign = 'center'
+      this.ctx.textBaseline = 'middle'
+      this.ctx.fillText(buildingType.emoji, x, y)
+    }
     this.ctx.globalAlpha = 1.0
 
     // Draw progress bar
@@ -245,10 +261,15 @@ export class TownRenderer {
     this.ctx.lineWidth = 1
     this.ctx.strokeRect(barX, barY, barWidth, barHeight)
 
-    // Construction icon (using cached canvas)
+    // Construction icon (using cached canvas or fallback)
     const constructionCanvas = this.getCachedEmoji('🏗️', 16)
-    const constructionHalfSize = Math.floor(constructionCanvas.width / 2)
-    this.ctx.drawImage(constructionCanvas, x - constructionHalfSize, y - 30 - constructionHalfSize)
+    if (constructionCanvas) {
+      const constructionHalfSize = Math.floor(constructionCanvas.width / 2)
+      this.ctx.drawImage(constructionCanvas, x - constructionHalfSize, y - 30 - constructionHalfSize)
+    } else {
+      this.ctx.font = '16px Arial'
+      this.ctx.fillText('🏗️', x, y - 30)
+    }
   }
 
   /**
@@ -266,10 +287,17 @@ export class TownRenderer {
     this.ctx.fillStyle = '#654321'
     this.ctx.fillRect(x - 45, y - 45, 90, 90)
 
-    // Draw building emoji (using cached canvas)
+    // Draw building emoji (using cached canvas or fallback)
     const buildingCanvas = this.getCachedEmoji(buildingType.emoji, 52)
-    const buildingHalfSize = Math.floor(buildingCanvas.width / 2)
-    this.ctx.drawImage(buildingCanvas, x - buildingHalfSize, y - buildingHalfSize)
+    if (buildingCanvas) {
+      const buildingHalfSize = Math.floor(buildingCanvas.width / 2)
+      this.ctx.drawImage(buildingCanvas, x - buildingHalfSize, y - buildingHalfSize)
+    } else {
+      this.ctx.font = '52px Arial'
+      this.ctx.textAlign = 'center'
+      this.ctx.textBaseline = 'middle'
+      this.ctx.fillText(buildingType.emoji, x, y)
+    }
 
     // Draw building name (text is OK here, rendered infrequently)
     this.ctx.font = 'bold 11px Arial'
@@ -411,16 +439,32 @@ export class TownRenderer {
       const x = Math.floor(worker.x)
       const y = Math.floor(worker.y)
 
-      // Get cached emoji canvas
+      // Get cached emoji canvas (with fallback to fillText)
       const emojiCanvas = this.getCachedEmoji(worker.icon, 28)
-      const halfSize = Math.floor(emojiCanvas.width / 2)
 
-      // Draw shadow (simple rectangle, faster than fillText)
-      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'
-      this.ctx.fillRect(x - halfSize + 2, y - halfSize + 2, emojiCanvas.width, emojiCanvas.height)
+      if (emojiCanvas) {
+        const halfSize = Math.floor(emojiCanvas.width / 2)
 
-      // Draw worker icon from cached canvas (10-50x faster than fillText!)
-      this.ctx.drawImage(emojiCanvas, x - halfSize, y - halfSize)
+        // Draw shadow (simple rectangle, faster than fillText)
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'
+        this.ctx.fillRect(x - halfSize + 2, y - halfSize + 2, emojiCanvas.width, emojiCanvas.height)
+
+        // Draw worker icon from cached canvas (10-50x faster than fillText!)
+        this.ctx.drawImage(emojiCanvas, x - halfSize, y - halfSize)
+      } else {
+        // Fallback to fillText
+        this.ctx.font = '28px Arial'
+        this.ctx.textAlign = 'center'
+        this.ctx.textBaseline = 'middle'
+
+        // Draw shadow
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'
+        this.ctx.fillText(worker.icon, x + 2, y + 2)
+
+        // Draw worker icon
+        this.ctx.fillStyle = '#000'
+        this.ctx.fillText(worker.icon, x, y)
+      }
 
       // Draw speech bubble if talking
       if (worker.speechTimer > 0) {
@@ -440,10 +484,17 @@ export class TownRenderer {
         this.ctx.fill()
         this.ctx.stroke()
 
-        // Draw speech emoji from cache
+        // Draw speech emoji from cache (with fallback)
         const speechCanvas = this.getCachedEmoji(worker.speechText, 20)
-        const speechHalfSize = Math.floor(speechCanvas.width / 2)
-        this.ctx.drawImage(speechCanvas, x - speechHalfSize, bubbleY + bubbleHeight / 2 - speechHalfSize)
+        if (speechCanvas) {
+          const speechHalfSize = Math.floor(speechCanvas.width / 2)
+          this.ctx.drawImage(speechCanvas, x - speechHalfSize, bubbleY + bubbleHeight / 2 - speechHalfSize)
+        } else {
+          this.ctx.font = '20px Arial'
+          this.ctx.fillStyle = '#000'
+          this.ctx.textAlign = 'center'
+          this.ctx.fillText(worker.speechText, x, bubbleY + bubbleHeight / 2)
+        }
       }
     })
   }
