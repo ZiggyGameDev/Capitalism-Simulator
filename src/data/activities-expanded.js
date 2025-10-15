@@ -75,6 +75,17 @@ export const activities = [
     description: 'Breaking rocks with primitive tools'
   },
   {
+    id: 'mineCoal',
+    name: 'Mine Coal',
+    skillId: 'gathering',
+    levelRequired: 5,
+    inputs: {},
+    outputs: { coal: 2 },
+    duration: 2,
+    xpGained: 10,
+    description: 'Extracting coal from underground deposits'
+  },
+  {
     id: 'fetchWater',
     name: 'Fetch Water',
     skillId: 'gathering',
@@ -131,6 +142,39 @@ export const activities = [
     xpGained: 15,
     description: 'Metallurgy - the beginning of the end'
   },
+  {
+    id: 'forgeBasicSteel',
+    name: 'Forge Steel (Manual)',
+    skillId: 'crafting',
+    levelRequired: 15,
+    inputs: { iron: 4, coal: 3 },
+    outputs: { steel: 1 },
+    duration: 8,
+    xpGained: 20,
+    description: 'Manual steel forging - slow but necessary'
+  },
+  {
+    id: 'craftEquipment',
+    name: 'Craft Equipment (Manual)',
+    skillId: 'crafting',
+    levelRequired: 20,
+    inputs: { steel: 2, iron: 3, woodenPlank: 2 },
+    outputs: { equipment: 1 },
+    duration: 10,
+    xpGained: 25,
+    description: 'Handcrafted tools and equipment'
+  },
+  {
+    id: 'buildBasicMachine',
+    name: 'Build Machine (Manual)',
+    skillId: 'crafting',
+    levelRequired: 25,
+    inputs: { iron: 12, steel: 6, equipment: 3 },
+    outputs: { machine: 1 },
+    duration: 15,
+    xpGained: 35,
+    description: 'Assembling your first machine by hand'
+  },
 
   // ========== MANUFACTURING: The Industrial Revolution ==========
   {
@@ -159,15 +203,15 @@ export const activities = [
   },
   {
     id: 'forgeSteel',
-    name: 'Forge Steel',
+    name: 'Forge Steel (Factory)',
     skillId: 'manufacturing',
     levelRequired: 10,
     workerRequired: 'tractorWorker',
     inputs: { iron: 3, coal: 2 },
-    outputs: { steel: 2 },
-    duration: 5,
+    outputs: { steel: 3 },
+    duration: 4,
     xpGained: 18,
-    description: 'The backbone of industry'
+    description: 'Efficient factory steel production'
   },
   {
     id: 'assembleEquipment',
@@ -316,6 +360,30 @@ export const activities = [
     duration: 5,
     xpGained: 40,
     description: 'Humans are fungible resources'
+  },
+  {
+    id: 'collectBasicData',
+    name: 'Collect Basic Data',
+    skillId: 'automation',
+    levelRequired: 22,
+    workerRequired: 'tractorWorker',
+    inputs: { electronics: 1 },
+    outputs: { data: 5 },
+    duration: 5,
+    xpGained: 15,
+    description: 'Manual data collection and logging'
+  },
+  {
+    id: 'buildBasicAI',
+    name: 'Build Basic AI Core',
+    skillId: 'automation',
+    levelRequired: 25,
+    workerRequired: 'tractorWorker',
+    inputs: { electronics: 20, circuit: 15, data: 50 },
+    outputs: { aiCore: 1 },
+    duration: 25,
+    xpGained: 60,
+    description: 'First generation AI - crude but functional'
   },
 
   // ========== COMPUTING: Digital Supremacy ==========

@@ -309,7 +309,7 @@ export const buildingTypes = [
     name: 'Drone Server',
     emoji: '🖥️',
     description: 'AI-controlled drone production facility',
-    baseCost: { electronics: 200, circuit: 100, aiCore: 5 },
+    baseCost: { electronics: 250, circuit: 150, plastic: 100 },
     costMultiplier: 2.0, // Each additional drone server costs 2x more
     constructionTime: 120, // seconds - highly advanced
     maxCount: 5, // Max drone servers in town
@@ -327,15 +327,15 @@ export const buildingTypes = [
         id: 'drone_extra_rack',
         name: 'Extra Server Rack',
         description: 'Add another rack (2 more drones)',
-        cost: { electronics: 300, circuit: 150, aiCore: 3 },
+        cost: { electronics: 400, circuit: 200, plastic: 150 },
         effect: { roomsPerHouse: 1 },
         maxLevel: 3
       },
       {
         id: 'drone_faster_deployment',
-        name: 'AI Optimization',
+        name: 'Software Optimization',
         description: 'Faster drone deployment (-15s deployment time)',
-        cost: { aiCore: 10, algorithm: 5 },
+        cost: { electronics: 200, circuit: 100 },
         effect: { workerGenerationTime: -15 },
         maxLevel: 3
       }
