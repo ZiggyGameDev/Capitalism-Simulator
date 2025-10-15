@@ -194,5 +194,176 @@ describe('ResourceManager', () => {
       rm.reset()
       expect(rm.getAll()).toEqual({})
     })
+
+    it('should clear storage bonuses', () => {
+      rm.addStorageBonus('wood', 50)
+      rm.reset()
+      expect(rm.getStorageLimit('wood')).toBe(100) // Back to base limit
+    })
+  })
+
+  describe('Storage System', () => {
+    describe('getStorageLimit()', () => {
+      it('should return base storage limit for new resource', () => {
+        expect(rm.getStorageLimit('wood')).toBe(100)
+      })
+
+      it('should include storage bonuses', () => {
+        rm.addStorageBonus('wood', 50)
+        expect(rm.getStorageLimit('wood')).toBe(150)
+      })
+
+      it('should accumulate multiple bonuses', () => {
+        rm.addStorageBonus('wood', 50)
+        rm.addStorageBonus('wood', 30)
+        expect(rm.getStorageLimit('wood')).toBe(180)
+      })
+    })
+
+    describe('addStorageBonus()', () => {
+      it('should add storage bonus', () => {
+        rm.addStorageBonus('wood', 50)
+        expect(rm.getStorageLimit('wood')).toBe(150)
+      })
+
+      it('should handle multiple resources independently', () => {
+        rm.addStorageBonus('wood', 50)
+        rm.addStorageBonus('stone', 100)
+        expect(rm.getStorageLimit('wood')).toBe(150)
+        expect(rm.getStorageLimit('stone')).toBe(200)
+      })
+
+      it('should accumulate bonuses for same resource', () => {
+        rm.addStorageBonus('wood', 50)
+        rm.addStorageBonus('wood', 25)
+        expect(rm.getStorageLimit('wood')).toBe(175)
+      })
+    })
+
+    describe('add() with storage limits', () => {
+      it('should cap resources at storage limit', () => {
+        rm.add('wood', 150) // Over limit of 100
+        expect(rm.get('wood')).toBe(100)
+      })
+
+      it('should allow filling up to storage limit', () => {
+        rm.add('wood', 100)
+        expect(rm.get('wood')).toBe(100)
+      })
+
+      it('should cap when adding to existing amount', () => {
+        rm.add('wood', 80)
+        rm.add('wood', 50) // Would be 130, but capped at 100
+        expect(rm.get('wood')).toBe(100)
+      })
+
+      it('should respect increased storage limit', () => {
+        rm.addStorageBonus('wood', 50)
+        rm.add('wood', 120)
+        expect(rm.get('wood')).toBe(120) // Under new limit of 150
+      })
+
+      it('should return actual amount added', () => {
+        rm.add('wood', 80)
+        const added = rm.add('wood', 50) // Can only add 20 more
+        expect(added).toBe(20)
+        expect(rm.get('wood')).toBe(100)
+      })
+
+      it('should not cap negative amounts (subtracting)', () => {
+        rm.add('wood', 100)
+        rm.add('wood', -30)
+        expect(rm.get('wood')).toBe(70)
+      })
+    })
+
+    describe('isAtStorageLimit()', () => {
+      it('should return true when at limit', () => {
+        rm.add('wood', 100)
+        expect(rm.isAtStorageLimit('wood')).toBe(true)
+      })
+
+      it('should return false when below limit', () => {
+        rm.add('wood', 50)
+        expect(rm.isAtStorageLimit('wood')).toBe(false)
+      })
+
+      it('should return false for empty resource', () => {
+        expect(rm.isAtStorageLimit('wood')).toBe(false)
+      })
+
+      it('should account for increased storage', () => {
+        rm.addStorageBonus('wood', 50)
+        rm.add('wood', 120)
+        expect(rm.isAtStorageLimit('wood')).toBe(false) // 120 < 150
+        rm.add('wood', 30)
+        expect(rm.isAtStorageLimit('wood')).toBe(true) // 150 = 150
+      })
+    })
+
+    describe('getStorageInfo()', () => {
+      it('should return current and max storage', () => {
+        rm.add('wood', 50)
+        const info = rm.getStorageInfo('wood')
+        expect(info.current).toBe(50)
+        expect(info.max).toBe(100)
+        expect(info.percentage).toBe(50)
+      })
+
+      it('should return correct percentage', () => {
+        rm.add('wood', 75)
+        const info = rm.getStorageInfo('wood')
+        expect(info.percentage).toBe(75)
+      })
+
+      it('should handle empty resource', () => {
+        const info = rm.getStorageInfo('wood')
+        expect(info.current).toBe(0)
+        expect(info.max).toBe(100)
+        expect(info.percentage).toBe(0)
+      })
+
+      it('should handle increased storage limit', () => {
+        rm.addStorageBonus('wood', 100)
+        rm.add('wood', 150)
+        const info = rm.getStorageInfo('wood')
+        expect(info.current).toBe(150)
+        expect(info.max).toBe(200)
+        expect(info.percentage).toBe(75)
+      })
+    })
+
+    describe('getState() and loadState()', () => {
+      it('should save and restore storage bonuses', () => {
+        rm.addStorageBonus('wood', 50)
+        rm.addStorageBonus('stone', 100)
+        rm.add('wood', 120)
+
+        const state = rm.getState()
+        const newRm = new ResourceManager()
+        newRm.loadState(state)
+
+        expect(newRm.getStorageLimit('wood')).toBe(150)
+        expect(newRm.getStorageLimit('stone')).toBe(200)
+        expect(newRm.get('wood')).toBe(120)
+      })
+
+      it('should handle empty state', () => {
+        const newRm = new ResourceManager()
+        newRm.loadState({})
+        expect(newRm.getStorageLimit('wood')).toBe(100)
+      })
+
+      it('should preserve storage bonuses across save/load cycles', () => {
+        rm.addStorageBonus('wood', 50)
+        const state1 = rm.getState()
+        rm.loadState(state1)
+        expect(rm.getStorageLimit('wood')).toBe(150)
+
+        const state2 = rm.getState()
+        rm.loadState(state2)
+        expect(rm.getStorageLimit('wood')).toBe(150)
+      })
+    })
   })
 })

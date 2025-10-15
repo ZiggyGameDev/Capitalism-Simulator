@@ -10,7 +10,7 @@ export const buildingTypes = [
     description: 'Generates workers over time',
     baseCost: { wood: 50, stone: 30 },
     costMultiplier: 1.5, // Each additional house costs 1.5x more
-    constructionTime: 60, // seconds
+    constructionTime: 30, // seconds
     maxCount: 10, // Max houses in town
     unlockCondition: null, // Always unlocked
 
@@ -114,43 +114,33 @@ export const buildingTypes = [
   {
     id: 'warehouse',
     name: 'Warehouse',
-    emoji: '🏭',
-    description: 'Provides passive resource generation',
-    baseCost: { wood: 200, stone: 300 },
-    costMultiplier: 3.0,
-    constructionTime: 150,
-    maxCount: 5,
-    unlockCondition: { type: 'resource_mined', resource: 'stone', amount: 1000 },
+    emoji: '📦',
+    description: 'Increases storage capacity for all resources',
+    baseCost: { wood: 30, stone: 20 },
+    costMultiplier: 1.8,
+    constructionTime: 45,
+    maxCount: 10,
+    unlockCondition: null, // Always unlocked
 
-    effect: {
-      passiveGeneration: {
-        wood: 1,  // per minute
-        stone: 1,
-        wheat: 2
-      }
-    },
+    // Warehouse-specific properties
+    storageBonus: 50, // Adds +50 to all resource storage
 
     upgrades: [
       {
-        id: 'warehouse_efficiency',
-        name: 'Efficient Storage',
-        description: 'Doubles passive generation',
-        cost: { stone: 500, iron: 100 },
-        effect: { passiveGenerationMultiplier: 1 },
-        maxLevel: 3
-      },
-      {
         id: 'warehouse_expansion',
         name: 'Warehouse Expansion',
-        description: 'Adds new resources to generation',
-        cost: { wood: 300, stone: 300, gold: 200 },
-        effect: {
-          passiveGeneration: {
-            iron: 0.5,
-            coal: 0.5
-          }
-        },
-        maxLevel: 1
+        description: 'Adds +25 storage capacity',
+        cost: { wood: 50, stone: 40 },
+        effect: { storageBonus: 25 },
+        maxLevel: 5
+      },
+      {
+        id: 'warehouse_organization',
+        name: 'Better Organization',
+        description: 'Adds +50 storage capacity',
+        cost: { wood: 100, stone: 80, iron: 20 },
+        effect: { storageBonus: 50 },
+        maxLevel: 3
       }
     ]
   },

@@ -373,6 +373,8 @@ describe('WorkerManager', () => {
     })
 
     it('should handle very large worker counts', () => {
+      // Increase storage limit to accommodate large worker count
+      resourceManager.addStorageBonus('basicWorker', 1000000)
       resourceManager.add('basicWorker', 1000000)
       workerManager.assign('chopWood', 'basicWorker', 999999)
       expect(workerManager.getAssignment('chopWood', 'basicWorker')).toBe(999999)

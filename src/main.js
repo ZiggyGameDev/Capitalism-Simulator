@@ -487,14 +487,17 @@ function createResourceElement(resourceId, amount) {
     return
   }
 
+  const storageInfo = game.resourceManager.getStorageInfo(resourceId)
+
   const div = document.createElement('div')
   div.className = 'currency-item'
   div.dataset.currencyId = resourceId
-  div.innerHTML = `${resource.icon} ${resource.name}: <span class="currency-amount">${Math.floor(amount)}</span> <span class="currency-rate"></span>`
+  div.innerHTML = `${resource.icon} ${resource.name}: <span class="currency-amount">${Math.floor(amount)}</span>/<span class="currency-max">${storageInfo.max}</span> <span class="currency-rate"></span>`
 
   resourceElements.set(resourceId, {
     root: div,
     amount: div.querySelector('.currency-amount'),
+    max: div.querySelector('.currency-max'),
     rate: div.querySelector('.currency-rate')
   })
 
@@ -834,6 +837,12 @@ function updateResourceAmount(resourceId) {
   // Update or remove
   if (amount > 0) {
     cached.amount.textContent = Math.floor(amount)
+
+    // Update storage limit display
+    const storageInfo = game.resourceManager.getStorageInfo(resourceId)
+    if (cached.max) {
+      cached.max.textContent = storageInfo.max
+    }
 
     // Update production rate
     const ratePerSecond = calculateResourceProductionRate(resourceId)

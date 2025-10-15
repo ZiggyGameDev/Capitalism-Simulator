@@ -40,8 +40,20 @@ export class GameEngine {
       this.audioManager.playLevelUpSound()
     })
 
-    this.eventBus.on('building:complete', () => {
+    this.eventBus.on('building:construction_complete', (data) => {
       this.audioManager.playSuccessSound()
+
+      // Apply storage bonus for warehouses
+      if (data.buildingTypeId === 'warehouse') {
+        const warehouseType = this.buildingManager.buildingTypes.find(b => b.id === 'warehouse')
+        if (warehouseType && warehouseType.storageBonus) {
+          // Apply storage bonus to ALL resources
+          const allResourceIds = Object.keys(this.resourceManager.getAll())
+          allResourceIds.forEach(resourceId => {
+            this.resourceManager.addStorageBonus(resourceId, warehouseType.storageBonus)
+          })
+        }
+      }
     })
 
     this.isRunning = false
@@ -150,7 +162,7 @@ export class GameEngine {
   getState() {
     return {
       version: 2, // Increment when save format changes
-      resources: this.resourceManager.getAll(),
+      resourceManager: this.resourceManager.getState(),
       skills: this.skillManager.getAllSkills(),
       upgrades: this.upgradeManager.getState(),
       workers: this.workerManager.getState(),
@@ -170,12 +182,18 @@ export class GameEngine {
       return
     }
 
-    // Load resources (support legacy 'currencies' key for backwards compatibility)
-    const resources = state.resources || state.currencies
-    if (resources) {
-      Object.entries(resources).forEach(([id, amount]) => {
-        this.resourceManager.set(id, amount)
-      })
+    // Load resources - handle both new and legacy formats
+    if (state.resourceManager) {
+      // New format with storage bonuses
+      this.resourceManager.loadState(state.resourceManager)
+    } else {
+      // Legacy format - just resources
+      const resources = state.resources || state.currencies
+      if (resources) {
+        Object.entries(resources).forEach(([id, amount]) => {
+          this.resourceManager.set(id, amount)
+        })
+      }
     }
 
     // Load skills

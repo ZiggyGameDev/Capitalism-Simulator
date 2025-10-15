@@ -29,7 +29,7 @@ describe('GameEngine - Save/Load System', () => {
     it('should return complete game state', () => {
       const state = engine.getState()
 
-      expect(state).toHaveProperty('resources')
+      expect(state).toHaveProperty('resourceManager')
       expect(state).toHaveProperty('skills')
       expect(state).toHaveProperty('upgrades')
       expect(state).toHaveProperty('workers')
@@ -47,7 +47,7 @@ describe('GameEngine - Save/Load System', () => {
       engine.resourceManager.add('wheat', 50)
       const state = engine.getState()
 
-      expect(state.resources.wheat).toBe(50)
+      expect(state.resourceManager.resources.wheat).toBe(50)
     })
   })
 
