@@ -628,7 +628,8 @@ export class BuildingManager {
       this.buildings = JSON.parse(JSON.stringify(state.buildings))
     }
     if (state.availableSlots !== undefined) {
-      this.availableSlots = state.availableSlots
+      // Migrate old saves: ensure slots are at least the new starting slots
+      this.availableSlots = Math.max(state.availableSlots, townSettings.startingSlots)
     }
     if (state.usedSlots !== undefined) {
       this.usedSlots = state.usedSlots

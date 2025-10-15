@@ -267,8 +267,8 @@ export const buildingTypes = [
 ]
 
 export const townSettings = {
-  maxBuildingSlots: 20, // Total slots for all buildings
-  startingSlots: 9,     // Slots available at start
+  maxBuildingSlots: 32, // Total slots for all buildings
+  startingSlots: 16,    // Slots available at start (4x4 grid)
   slotUnlockCost: {     // Cost to unlock more slots
     wood: 100,
     stone: 100,
