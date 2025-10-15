@@ -452,6 +452,159 @@ export class BuildingManager {
   }
 
   /**
+   * Demolish a building (get 50% of base cost back)
+   */
+  demolishBuilding(instanceId) {
+    const building = this.getBuildingInstance(instanceId)
+    if (!building) {
+      throw new Error('Building not found')
+    }
+
+    const buildingType = this.buildingTypes.find(b => b.id === building.buildingTypeId)
+    if (!buildingType) {
+      throw new Error('Building type not found')
+    }
+
+    // Give back 50% of base cost (not scaled cost)
+    const refund = {}
+    for (const [resource, amount] of Object.entries(buildingType.baseCost)) {
+      refund[resource] = Math.floor(amount * 0.5)
+    }
+
+    // Return resources
+    for (const [resource, amount] of Object.entries(refund)) {
+      this.resourceManager.add(resource, amount)
+    }
+
+    // Remove from buildings array
+    const typeInstances = this.buildings[building.buildingTypeId]
+    if (typeInstances) {
+      const index = typeInstances.findIndex(b => b.instanceId === instanceId)
+      if (index !== -1) {
+        typeInstances.splice(index, 1)
+      }
+    }
+
+    // Free up a slot
+    this.usedSlots = Math.max(0, this.usedSlots - 1)
+
+    // Clean up timers/queues
+    if (this.houseWorkerTimers[instanceId]) {
+      delete this.houseWorkerTimers[instanceId]
+    }
+    if (this.trainingQueues[instanceId]) {
+      delete this.trainingQueues[instanceId]
+    }
+
+    // Emit event
+    if (this.eventBus) {
+      this.eventBus.emit('building:demolished', {
+        instanceId,
+        buildingTypeId: building.buildingTypeId,
+        refund
+      })
+    }
+
+    return refund
+  }
+
+  /**
+   * Check if a building can be upgraded
+   */
+  canUpgradeBuilding(instanceId, upgradeId) {
+    const building = this.getBuildingInstance(instanceId)
+    if (!building) {
+      return { canUpgrade: false, reason: 'Building not found' }
+    }
+
+    if (!building.constructionComplete) {
+      return { canUpgrade: false, reason: 'Building not complete' }
+    }
+
+    const buildingType = this.buildingTypes.find(b => b.id === building.buildingTypeId)
+    if (!buildingType || !buildingType.upgrades) {
+      return { canUpgrade: false, reason: 'No upgrades available' }
+    }
+
+    const upgrade = buildingType.upgrades.find(u => u.id === upgradeId)
+    if (!upgrade) {
+      return { canUpgrade: false, reason: 'Upgrade not found' }
+    }
+
+    const currentLevel = building.upgrades[upgradeId] || 0
+    if (currentLevel >= upgrade.maxLevel) {
+      return { canUpgrade: false, reason: 'Max level reached' }
+    }
+
+    // Check if can afford
+    if (!this.resourceManager.canAfford(upgrade.cost)) {
+      return { canUpgrade: false, reason: 'Cannot afford upgrade' }
+    }
+
+    return { canUpgrade: true }
+  }
+
+  /**
+   * Upgrade a building
+   */
+  upgradeBuilding(instanceId, upgradeId) {
+    const check = this.canUpgradeBuilding(instanceId, upgradeId)
+    if (!check.canUpgrade) {
+      throw new Error(check.reason)
+    }
+
+    const building = this.getBuildingInstance(instanceId)
+    const buildingType = this.buildingTypes.find(b => b.id === building.buildingTypeId)
+    const upgrade = buildingType.upgrades.find(u => u.id === upgradeId)
+
+    // Spend resources
+    this.resourceManager.spendCosts(upgrade.cost)
+
+    // Apply upgrade
+    building.upgrades[upgradeId] = (building.upgrades[upgradeId] || 0) + 1
+
+    // Apply special effects immediately
+    if (building.buildingTypeId === 'house') {
+      // Recalculate rooms if room upgrade
+      if (upgrade.id === 'house_extra_room') {
+        const newRoomCount = buildingType.roomsPerHouse + this.getBuildingBonus('roomsPerHouse')
+        while (building.rooms.length < newRoomCount) {
+          building.rooms.push({
+            currentWorkers: 0,
+            maxWorkers: buildingType.workersPerRoom + this.getBuildingBonus('workersPerRoom')
+          })
+          // Initialize timer for new room
+          const roomIndex = building.rooms.length - 1
+          if (!this.houseWorkerTimers[instanceId]) {
+            this.houseWorkerTimers[instanceId] = {}
+          }
+          this.houseWorkerTimers[instanceId][`room${roomIndex}`] = buildingType.workerGenerationTime * 1000
+        }
+      }
+
+      // Update room capacities if workers per room upgrade
+      if (upgrade.id === 'house_faster_generation' || upgrade.id.includes('workersPerRoom')) {
+        const maxWorkersPerRoom = buildingType.workersPerRoom + this.getBuildingBonus('workersPerRoom')
+        building.rooms.forEach(room => {
+          room.maxWorkers = maxWorkersPerRoom
+        })
+      }
+    }
+
+    // Emit event
+    if (this.eventBus) {
+      this.eventBus.emit('building:upgraded', {
+        instanceId,
+        buildingTypeId: building.buildingTypeId,
+        upgradeId,
+        newLevel: building.upgrades[upgradeId]
+      })
+    }
+
+    return building.upgrades[upgradeId]
+  }
+
+  /**
    * Get state for saving
    */
   getState() {

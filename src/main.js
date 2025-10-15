@@ -783,7 +783,8 @@ function createBuildingCard(buildingType) {
     card.classList.add('locked')
   }
 
-  // Get current count and cost
+  // Get current buildings and cost
+  const builtBuildings = game.buildingManager.getBuildings(buildingType.id).filter(b => b.constructionComplete)
   const currentCount = game.buildingManager.getBuildings(buildingType.id).length
   const cost = game.buildingManager.getBuildingCost(buildingType.id)
   const canBuildResult = game.buildingManager.canBuild(buildingType.id)
@@ -811,6 +812,44 @@ function createBuildingCard(buildingType) {
     }
   }
 
+  // Built buildings HTML
+  let builtBuildingsHTML = ''
+  builtBuildings.forEach((building, index) => {
+    const upgradesHTML = buildingType.upgrades ? buildingType.upgrades.map(upgrade => {
+      const currentLevel = building.upgrades[upgrade.id] || 0
+      const canUpgrade = game.buildingManager.canUpgradeBuilding(building.instanceId, upgrade.id)
+      const costText = Object.entries(upgrade.cost).map(([id, amt]) => `${resources[id].icon}${amt}`).join(' ')
+
+      return `
+        <div class="building-upgrade-item">
+          <div class="upgrade-info">
+            <strong>${upgrade.name}</strong> (${currentLevel}/${upgrade.maxLevel})
+            <div class="upgrade-desc">${upgrade.description}</div>
+            <div class="upgrade-cost-small">Cost: ${costText}</div>
+          </div>
+          <button class="btn-upgrade-building ${!canUpgrade.canUpgrade ? 'disabled' : ''}"
+                  data-instance="${building.instanceId}"
+                  data-upgrade="${upgrade.id}"
+                  ${!canUpgrade.canUpgrade ? 'disabled' : ''}>
+            ${canUpgrade.canUpgrade ? 'Upgrade' : canUpgrade.reason}
+          </button>
+        </div>
+      `
+    }).join('') : '<div class="no-upgrades">No upgrades available</div>'
+
+    builtBuildingsHTML += `
+      <div class="built-building-instance">
+        <div class="instance-header-row">
+          <span class="instance-label">${buildingType.emoji} ${buildingType.name} #${index + 1}</span>
+          <button class="btn-demolish" data-instance="${building.instanceId}">🗑️ Demolish</button>
+        </div>
+        <div class="building-upgrades">
+          ${upgradesHTML}
+        </div>
+      </div>
+    `
+  })
+
   card.innerHTML = `
     <div class="building-header">
       <div class="building-emoji">${buildingType.emoji}</div>
@@ -821,6 +860,7 @@ function createBuildingCard(buildingType) {
     </div>
     <div class="building-count">Built: ${currentCount}/${buildingType.maxCount}</div>
     ${unlockText}
+    ${builtBuildingsHTML ? `<div class="built-buildings-list">${builtBuildingsHTML}</div>` : ''}
     <div class="building-cost">
       ${costHTML}
     </div>
@@ -845,6 +885,39 @@ function createBuildingCard(buildingType) {
       }
     })
   }
+
+  // Add event listeners to demolish buttons
+  card.querySelectorAll('.btn-demolish').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const instanceId = btn.dataset.instance
+      if (confirm(`Demolish this ${buildingType.name}? You'll get 50% resources back.`)) {
+        try {
+          const refund = game.buildingManager.demolishBuilding(instanceId)
+          const refundText = Object.entries(refund).map(([id, amt]) => `${resources[id].icon}${amt}`).join(' ')
+          showNotification(`🗑️ Demolished! Refund: ${refundText}`)
+          buildBuildingMenu() // Rebuild to update UI
+        } catch (e) {
+          showNotification(`❌ ${e.message}`)
+        }
+      }
+    })
+  })
+
+  // Add event listeners to upgrade buttons
+  card.querySelectorAll('.btn-upgrade-building').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const instanceId = btn.dataset.instance
+      const upgradeId = btn.dataset.upgrade
+      try {
+        const newLevel = game.buildingManager.upgradeBuilding(instanceId, upgradeId)
+        const upgrade = buildingType.upgrades.find(u => u.id === upgradeId)
+        showNotification(`✨ Upgraded ${upgrade.name} to level ${newLevel}!`)
+        buildBuildingMenu() // Rebuild to update UI
+      } catch (e) {
+        showNotification(`❌ ${e.message}`)
+      }
+    })
+  })
 
   return card
 }
