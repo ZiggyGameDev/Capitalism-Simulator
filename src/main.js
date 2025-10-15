@@ -1149,10 +1149,8 @@ function handleResourceChanged(data) {
   // Update building menu to show updated resource costs
   buildBuildingMenu()
 
-  // Update town canvas (for worker changes)
-  if (townRenderer) {
-    townRenderer.render()
-  }
+  // NOTE: Don't manually render town canvas here - let the animation loop handle it smoothly
+  // Calling render() outside the requestAnimationFrame loop causes stuttering
 }
 
 function handleGameTick(data) {
@@ -1191,10 +1189,8 @@ function handleBuildingEvent(data) {
   // Rebuild building menu when anything changes
   buildBuildingMenu()
 
-  // Re-render town canvas
-  if (townRenderer) {
-    townRenderer.render()
-  }
+  // NOTE: Don't manually render town canvas here - let the animation loop handle it smoothly
+  // The requestAnimationFrame loop will pick up changes automatically on the next frame
 }
 
 function checkForUnlocks() {
