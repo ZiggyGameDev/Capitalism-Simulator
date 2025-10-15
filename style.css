@@ -298,6 +298,36 @@ body {
   background: #353560;
 }
 
+/* Activity background colors based on what they produce */
+.activity-produces-worker {
+  background: linear-gradient(135deg, #2a2a4e 0%, #2e2e52 100%);
+  border-color: #5a5a8e;
+}
+
+.activity-produces-raw {
+  background: linear-gradient(135deg, #3a2e2a 0%, #3e3230 100%);
+  border-color: #6a5e5a;
+}
+
+.activity-produces-food {
+  background: linear-gradient(135deg, #2a3a2a 0%, #2e3e2e 100%);
+  border-color: #5a6a5a;
+}
+
+.activity-produces-industrial {
+  background: linear-gradient(135deg, #2e2e3a 0%, #32323e 100%);
+  border-color: #5e5e6a;
+}
+
+/* Running activities override the category backgrounds */
+.activity-item.running.activity-produces-worker,
+.activity-item.running.activity-produces-raw,
+.activity-item.running.activity-produces-food,
+.activity-item.running.activity-produces-industrial {
+  background: #353560;
+  border-color: #7b8cde;
+}
+
 .activity-header {
   display: flex;
   justify-content: space-between;
@@ -309,6 +339,12 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.activity-emoji {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
 }
 
 .activity-name-text {

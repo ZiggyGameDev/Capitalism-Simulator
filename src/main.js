@@ -358,6 +358,26 @@ function createActivityElement(activity) {
   activityDiv.dataset.activityId = activity.id
   if (!unlocked) activityDiv.classList.add('locked')
 
+  // Get primary output resource for emoji and color theming
+  const primaryOutputId = Object.keys(activity.outputs)[0]
+  const primaryOutput = primaryOutputId ? resources[primaryOutputId] : null
+  const outputEmoji = primaryOutput ? primaryOutput.icon : '⚙️'
+
+  // Add color class based on primary output resource type
+  if (primaryOutputId) {
+    activityDiv.classList.add(`activity-produces-${primaryOutputId}`)
+    // Add generic category classes for broader theming
+    if (primaryOutputId.includes('Worker') || primaryOutputId === 'basicWorker') {
+      activityDiv.classList.add('activity-produces-worker')
+    } else if (['wood', 'stone', 'coal', 'iron'].includes(primaryOutputId)) {
+      activityDiv.classList.add('activity-produces-raw')
+    } else if (['wheat', 'corn', 'tomato', 'potato'].includes(primaryOutputId)) {
+      activityDiv.classList.add('activity-produces-food')
+    } else if (['steel', 'equipment', 'machine', 'electronics'].includes(primaryOutputId)) {
+      activityDiv.classList.add('activity-produces-industrial')
+    }
+  }
+
   // Build inputs text
   const inputsHTML = Object.keys(activity.inputs).length === 0
     ? '<span class="free-label">FREE</span>'
@@ -378,6 +398,7 @@ function createActivityElement(activity) {
   activityDiv.innerHTML = `
     <div class="activity-header">
       <div class="activity-name-wrapper">
+        <span class="activity-emoji">${outputEmoji}</span>
         <span class="activity-name-text">${activity.name}</span>
       </div>
       <div class="activity-level">${unlocked ? '' : `🔒 Level ${activity.levelRequired}`}</div>
