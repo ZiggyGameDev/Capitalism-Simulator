@@ -41,6 +41,9 @@ export const resources = {
 
   // Worker types (automation labor)
   basicWorker: { id: 'basicWorker', name: 'Basic Worker', icon: '👷', description: 'Human laborers' },
+  lumberjack: { id: 'lumberjack', name: 'Lumberjack', icon: '🪓', description: 'Specialists that supercharge wood income' },
+  miner: { id: 'miner', name: 'Miner', icon: '⛏️', description: 'Excavation crews that boost ore extraction' },
+  farmer: { id: 'farmer', name: 'Farmer', icon: '🌾', description: 'Professional growers for industrial farming' },
   tractorWorker: { id: 'tractorWorker', name: 'Tractor Worker', icon: '🚜', description: 'Mechanized farm worker' },
   droneWorker: { id: 'droneWorker', name: 'Drone Worker', icon: '🚁', description: 'AI-powered autonomous worker' },
 

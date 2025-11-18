@@ -1,14 +1,21 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test'
+import { getPlaywrightBrowserEnvironment } from './tests/e2e/utils/browserEnv.js'
+
+const browserEnv = getPlaywrightBrowserEnvironment()
+
+if (!browserEnv.available) {
+  console.warn(`⚠️ [Playwright] ${browserEnv.reason}`)
+}
 
 export default defineConfig({
-  testDir: './tests',
-  testMatch: '**/*.spec.js',  // Only match .spec.js files (not .test.js which are for vitest)
+  testDir: './tests/e2e',
+  testMatch: '**/*.spec.js', // Only run playwright specs, Vitest handles the rest
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
-  
+
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
@@ -28,6 +35,9 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
-});
 
-
+  metadata: {
+    browsersAvailable: browserEnv.available,
+    browserCachePath: browserEnv.location || 'not-installed',
+  },
+})

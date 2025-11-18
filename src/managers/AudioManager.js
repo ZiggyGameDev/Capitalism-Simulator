@@ -20,6 +20,7 @@ export class AudioManager {
     this.melodyInterval = null
     this.currentChord = 0
     this.currentMelodyNote = 0
+    this.currentNote = 0
 
     // Chord progression: I - V - vi - IV (C - G - Am - F)
     // Very popular and pleasant progression used in many games and songs
@@ -84,6 +85,11 @@ export class AudioManager {
       this.currentMelodyNote = (this.currentMelodyNote + 1) % this.melody.length
     }, 500)
 
+    this.musicInterval = {
+      chord: this.chordInterval,
+      melody: this.melodyInterval
+    }
+
     // Play initial chord and melody
     this.playChord()
     this.playMelodyNote()
@@ -103,6 +109,7 @@ export class AudioManager {
       clearInterval(this.melodyInterval)
       this.melodyInterval = null
     }
+    this.musicInterval = null
 
     // Stop all music oscillators
     this.musicOscillators.forEach(osc => {
@@ -149,15 +156,7 @@ export class AudioManager {
       oscillator.start(now)
       oscillator.stop(now + 2.0)
 
-      this.musicOscillators.push(oscillator)
-
-      // Clean up after it stops
-      setTimeout(() => {
-        const index = this.musicOscillators.indexOf(oscillator)
-        if (index > -1) {
-          this.musicOscillators.splice(index, 1)
-        }
-      }, 2100)
+      this._registerMusicOscillator(oscillator, 2100)
     })
   }
 
@@ -165,38 +164,39 @@ export class AudioManager {
    * Play a melody note
    */
   playMelodyNote() {
+    const frequency = this.melody[this.currentMelodyNote] || 440
+    this.playMusicNote(frequency)
+  }
+
+  /**
+   * Compat helper for legacy tests - plays a single melody note without
+   * advancing the melodic cursor.
+   * @param {number} forcedFrequency Optional frequency override
+   */
+  playMusicNote(forcedFrequency = null) {
     if (!this.audioContext || this.muted) return
+
+    const index = Math.max(0, Math.min(this.melody.length - 1, this.currentNote))
+    const frequency = forcedFrequency ?? this.melody[index] ?? 440
 
     const now = this.audioContext.currentTime
     const oscillator = this.audioContext.createOscillator()
     const gainNode = this.audioContext.createGain()
 
-    // Use sine wave for clear, bell-like melody
     oscillator.type = 'sine'
-    oscillator.frequency.value = this.melody[this.currentMelodyNote]
+    oscillator.frequency.value = frequency
 
-    // Quick attack and decay for melody notes
     gainNode.gain.setValueAtTime(0, now)
     gainNode.gain.linearRampToValueAtTime(0.08, now + 0.02)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.35)
 
-    // Connect nodes
     oscillator.connect(gainNode)
     gainNode.connect(this.musicGainNode)
 
-    // Play
     oscillator.start(now)
-    oscillator.stop(now + 0.5)
+    oscillator.stop(now + 0.4)
 
-    this.musicOscillators.push(oscillator)
-
-    // Clean up after it stops
-    setTimeout(() => {
-      const index = this.musicOscillators.indexOf(oscillator)
-      if (index > -1) {
-        this.musicOscillators.splice(index, 1)
-      }
-    }, 600)
+    this._registerMusicOscillator(oscillator, 450)
   }
 
   /**
@@ -458,5 +458,20 @@ export class AudioManager {
     if (this.sfxGainNode && !this.muted) {
       this.sfxGainNode.gain.value = this.sfxVolume
     }
+  }
+
+  /**
+   * Track oscillators so we can stop and clean them up predictably.
+   * @param {OscillatorNode} oscillator
+   * @param {number} lifespanMs
+   */
+  _registerMusicOscillator(oscillator, lifespanMs) {
+    this.musicOscillators.push(oscillator)
+    setTimeout(() => {
+      const index = this.musicOscillators.indexOf(oscillator)
+      if (index > -1) {
+        this.musicOscillators.splice(index, 1)
+      }
+    }, lifespanMs)
   }
 }

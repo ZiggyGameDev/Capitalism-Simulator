@@ -5,6 +5,7 @@ import { skills } from './data/skills-expanded.js'
 import { activities } from './data/activities-expanded.js'
 import { resources } from './data/resources-expanded.js'
 import { upgrades } from './data/upgrades.js'
+import { renderWorkerPanelList, renderWorkerSummaryCompact } from './ui/workerSummary.js'
 
 // Initialize game
 const game = new GameEngine(skills, activities, upgrades)
@@ -194,13 +195,12 @@ function setupEventListeners() {
     })
   })
 
-  // Back to activities button
-  const backToActivitiesBtn = document.getElementById('backToActivitiesBtn')
-  if (backToActivitiesBtn) {
-    backToActivitiesBtn.addEventListener('click', () => {
+  // Back to activities button (dynamic panel)
+  document.addEventListener('click', (event) => {
+    if (event.target && event.target.id === 'backToActivitiesBtn') {
       switchTab('activities')
-    })
-  }
+    }
+  })
 
   // Mute button
   const muteBtn = document.getElementById('muteBtn')
@@ -688,7 +688,19 @@ function buildWorkerPanel() {
     console.warn('⚠️ [UI] workerPanel element not found in HTML')
     return
   }
-  container.innerHTML = '<h3>Workers</h3><div id="workerSummaryList"></div>'
+  container.innerHTML = `
+    <div class="panel-header-row">
+      <div>
+        <h3>Automation Control</h3>
+        <p class="panel-subtitle">Assign specialists to keep factories humming.</p>
+      </div>
+      <button id="backToActivitiesBtn" class="btn-ghost">Back to Activities</button>
+    </div>
+    <div class="worker-panel-body">
+      <p class="worker-panel-hint">Tip: workers run tasks at half speed but never stop. Promote them via Training Halls to unlock massive boosts.</p>
+      <div id="workerSummaryList" class="worker-summary-list"></div>
+    </div>
+  `
 }
 
 function buildBuildingMenu() {
@@ -1223,59 +1235,12 @@ function updateActiveActivitiesPanel() {
 
 function updateWorkerSummary() {
   const container = document.getElementById('workerSummaryCompact')
-  if (!container) return
-
-  container.innerHTML = '<div class="worker-summary-title">👷 Workers</div>'
-
-  let hasWorkers = false
-  game.workerManager.workerTypes.forEach(workerType => {
-    const total = game.resourceManager.get(workerType.id) || 0
-    const assigned = game.workerManager.getAssignedWorkers(workerType.id)
-    const available = total - assigned
-
-    if (total > 0) {
-      hasWorkers = true
-      const availableClass = available === 0 ? 'worker-all-assigned' : ''
-      container.innerHTML += `
-        <div class="worker-summary-line ${availableClass}">
-          ${resources[workerType.id].icon} <span class="worker-available">${available}</span>/<span class="worker-total">${total}</span>
-        </div>
-      `
-    }
-  })
-
-  if (!hasWorkers) {
-    container.innerHTML += '<div class="worker-summary-none">No workers yet</div>'
-  }
+  renderWorkerSummaryCompact(game, container)
 }
 
 function updateWorkerPanel() {
   const container = document.getElementById('workerSummaryList')
-  if (!container) return
-
-  container.innerHTML = ''
-
-  let hasWorkers = false
-  game.workerManager.workerTypes.forEach(workerType => {
-    const total = game.resourceManager.get(workerType.id) || 0
-    const assigned = game.workerManager.getAssignedWorkers(workerType.id)
-    const available = total - assigned
-
-    if (total > 0) {
-      hasWorkers = true
-      container.innerHTML += `
-        <div class="worker-summary-item">
-          <span class="worker-summary-icon">${resources[workerType.id].icon}</span>
-          <span class="worker-summary-name">${resources[workerType.id].name}</span>
-          <span class="worker-summary-stats">${total} total (${assigned} assigned, ${available} available)</span>
-        </div>
-      `
-    }
-  })
-
-  if (!hasWorkers) {
-    container.innerHTML = '<div class="no-activities">No workers yet - produce worker currencies to unlock automation!</div>'
-  }
+  renderWorkerPanelList(game, container)
 }
 
 // ============================================================================
