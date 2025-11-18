@@ -4,32 +4,63 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <title>Incremental Game - Skill Training Adventure</title>
+  <title>Capitalism Simulator - Automation Playground</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="game-container">
-    <!-- Game Status Bar -->
-    <div class="game-status-bar">
-      <div class="game-title">
-        <h1>⛏️ Idle Clicker Game</h1>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <p class="eyebrow">Late Stage Capitalism Sandbox</p>
+        <h1>Capitalism Simulator</h1>
+        <p class="tagline">Exploit loops, automate everything, industrialize your tiny town.</p>
       </div>
-      <div class="game-controls">
-        <div class="volume-control">
-          <button id="muteBtn" class="btn-mute" title="Toggle music">🔊</button>
-          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="30" title="Music volume">
-          <span class="volume-label">🎵</span>
+      <div class="header-actions">
+        <div class="audio-controls">
+          <button id="muteBtn" class="btn-icon" title="Toggle music">🔊</button>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="35" title="Music volume">
         </div>
-        <button id="debugBtn" class="btn-debug" title="Toggle debug panel">🛠️</button>
+        <button id="debugBtn" class="btn-ghost" title="Toggle debug panel">🛠 Debug</button>
       </div>
-    </div>
+    </header>
 
-    <!-- Currency Ticker -->
-    <div class="currency-ticker-container">
-      <div id="currencyTicker" class="currency-ticker"></div>
-    </div>
+    <section class="command-panel">
+      <div class="command-buttons">
+        <button id="saveBtn" class="btn-primary">💾 Save</button>
+        <button id="resetBtn" class="btn-secondary">♻ Soft Reset</button>
+        <button id="restartBtn" class="btn-danger">🧨 Hard Reset</button>
+      </div>
+      <div class="command-note">
+        <p>Autosaves every 30 seconds • Manual saves are instant • Hard reset wipes everything.</p>
+      </div>
+    </section>
 
-    <!-- Debug Panel (hidden by default) -->
+    <section class="status-grid">
+      <article class="status-card ledger-card">
+        <div class="status-card-header">
+          <div>
+            <h2>Global Ledger</h2>
+            <p>Live feed of every resource you control.</p>
+          </div>
+        </div>
+        <div id="currencyTicker" class="currency-ticker"></div>
+      </article>
+      <article class="status-card automation-card">
+        <div class="status-card-header">
+          <div>
+            <h2>Automation Snapshot</h2>
+            <p>Available vs total workers across all specializations.</p>
+          </div>
+        </div>
+        <div id="workerSummaryCompact" class="worker-summary-compact"></div>
+      </article>
+    </section>
+
+    <nav class="tab-navigation">
+      <button class="tab-button active" data-tab="activities">🎯 Workfront</button>
+      <button class="tab-button" data-tab="buildings">🏗️ City Blueprint</button>
+    </nav>
+
     <div id="debugPanel" class="debug-panel" style="display: none;">
       <h3>🛠️ Debug Tools</h3>
       <div class="debug-buttons">
@@ -40,78 +71,79 @@
       </div>
     </div>
 
-    <!-- Tab Navigation (Mobile Only) -->
-    <div class="tab-navigation">
-      <button class="tab-button active" data-tab="activities">🎯 Activities</button>
-      <button class="tab-button" data-tab="buildings">🏗️ Buildings</button>
-    </div>
-
-    <!-- Main Game Layout -->
-    <div class="game-main tab-content active" data-view="activities">
-      <!-- Skill List (Left) -->
-      <div class="skill-panel">
-        <h2>Skills</h2>
-        <div id="skillList" class="skill-list"></div>
-        <div class="skill-panel-footer">
-          <button id="saveBtn" class="btn-save">💾 Save</button>
-          <button id="resetBtn" class="btn-reset">🔄 Reset</button>
+    <main class="game-layout tab-content active" data-view="activities">
+      <aside class="panel skill-panel">
+        <div class="panel-header-row">
+          <div>
+            <h2>Skill Tree</h2>
+            <p class="panel-subtitle">Swap disciplines to unlock new production chains.</p>
+          </div>
         </div>
-      </div>
+        <div id="skillList" class="skill-list"></div>
+      </aside>
 
-      <!-- Activity List (Center) -->
-      <div class="activity-panel">
+      <section class="panel activity-panel">
+        <div class="panel-header-row">
+          <div>
+            <h2>Activity Queue</h2>
+            <p class="panel-subtitle">Click to grind manually, or assign workers to automate.</p>
+          </div>
+        </div>
         <div id="activityList" class="activity-list"></div>
-      </div>
+      </section>
 
-      <!-- Right Column: Town, Buildings, Active Activities & Upgrades -->
-      <div class="right-column">
-        <!-- Town Canvas -->
-        <div class="town-panel">
-          <h2>🏙️ Your Town</h2>
+      <section class="right-column">
+        <div class="panel town-panel">
+          <div class="panel-header-row">
+            <div>
+              <h2>Urban Core</h2>
+              <p class="panel-subtitle">Canvas updates live with every construction.</p>
+            </div>
+          </div>
           <canvas id="townCanvas" class="town-canvas"></canvas>
         </div>
 
-        <!-- Buildings (Desktop: shown here, Mobile: shown in tab) -->
-        <div class="building-view-desktop">
-          <div class="building-menu-panel">
-            <div class="building-menu-header">
-              <h2>🏗️ Buildings</h2>
+        <div class="panel building-panel">
+          <div class="panel-header-row">
+            <div>
+              <h2>Construction Queue</h2>
+              <p class="panel-subtitle">Spend resources to expand your industrial footprint.</p>
             </div>
-            <div class="building-slots-info">
-              <span id="buildingSlots">0/9 Slots Used</span>
-            </div>
-            <div id="buildingMenu" class="building-menu"></div>
+            <span id="buildingSlots" class="building-slots-info">0/0 Slots Used</span>
           </div>
+          <div id="buildingMenu" class="building-menu"></div>
         </div>
 
-        <!-- Active Activities -->
-        <div class="active-panel">
-          <div id="activeActivities" class="active-activities"></div>
-        </div>
+        <div class="panel" id="activeActivities"></div>
 
-        <!-- Upgrades -->
-        <div class="upgrade-panel">
-          <h3>Upgrades</h3>
+        <div class="panel upgrade-panel">
+          <div class="panel-header-row">
+            <div>
+              <h3>Research &amp; Upgrades</h3>
+              <p class="panel-subtitle">Modifiers scoped to the currently selected skill.</p>
+            </div>
+          </div>
           <div id="upgradeList" class="upgrade-list"></div>
         </div>
-      </div>
-    </div>
 
-    <!-- Buildings View (Mobile Only - Tab View) -->
-    <div class="building-view-mobile tab-content" data-view="buildings">
-      <div class="building-menu-panel">
-        <div class="building-menu-header">
-          <h2>🏗️ Buildings</h2>
-        </div>
-        <div class="building-slots-info">
-          <span id="buildingSlotsMobile">0/9 Slots Used</span>
+        <div class="panel worker-panel" id="workerPanel"></div>
+      </section>
+    </main>
+
+    <section class="building-view-mobile tab-content" data-view="buildings">
+      <div class="panel">
+        <div class="panel-header-row">
+          <div>
+            <h2>City Projects</h2>
+            <p class="panel-subtitle">Full-screen construction view for mobile.</p>
+          </div>
+          <span id="buildingSlotsMobile" class="building-slots-info">0/0 Slots Used</span>
         </div>
         <div id="buildingMenuMobile" class="building-menu"></div>
       </div>
-    </div>
+    </section>
   </div>
 
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
-

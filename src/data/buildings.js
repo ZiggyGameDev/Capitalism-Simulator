@@ -228,6 +228,39 @@ export const buildingTypes = [
     // Available training programs
     trainingPrograms: [
       {
+        id: 'train_lumberjack',
+        name: 'Lumberjack Course',
+        emoji: '🪓',
+        description: 'Turn basic workers into hyper-efficient lumberjacks',
+        inputWorker: 'basicWorker',
+        outputWorker: 'lumberjack',
+        workersRequired: 1,
+        trainingTime: 40,
+        cost: { wood: 25 }
+      },
+      {
+        id: 'train_miner',
+        name: 'Mining Apprenticeship',
+        emoji: '⛏️',
+        description: 'Teach workers how to extract ore safely-ish',
+        inputWorker: 'basicWorker',
+        outputWorker: 'miner',
+        workersRequired: 1,
+        trainingTime: 45,
+        cost: { stone: 30 }
+      },
+      {
+        id: 'train_farmer',
+        name: 'Industrial Farming Seminar',
+        emoji: '🌾',
+        description: 'Scale up food production with professional farmers',
+        inputWorker: 'basicWorker',
+        outputWorker: 'farmer',
+        workersRequired: 1,
+        trainingTime: 35,
+        cost: { wheat: 25 }
+      },
+      {
         id: 'train_tractor',
         name: 'Tractor Operator Training',
         emoji: '🚜',

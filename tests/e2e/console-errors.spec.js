@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test'
+import { skipWhenBrowsersMissing } from './utils/browserEnv.js'
+
+skipWhenBrowsersMissing(test)
 
 /**
  * Console Error Smoke Tests

@@ -137,11 +137,13 @@ describe('UI Widget Visibility - Currency Ticker', () => {
       expect(amountSpan.textContent).toBe('15')
     })
 
-    it('should handle all 37 resource types', () => {
+    it('should handle all resource types defined in data', () => {
       const container = document.getElementById('currencyTicker')
       const allCurrencyIds = Object.keys(currencies)
+      const expectedCount = allCurrencyIds.length
 
-      expect(allCurrencyIds.length).toBe(37)
+      // Sanity check so we notice if resources regress dramatically
+      expect(expectedCount).toBeGreaterThanOrEqual(37)
 
       // Add all resources
       allCurrencyIds.forEach((id, index) => {
@@ -159,8 +161,8 @@ describe('UI Widget Visibility - Currency Ticker', () => {
         container.appendChild(div)
       })
 
-      // Verify all 37 are in DOM
-      expect(container.querySelectorAll('[data-currency-id]').length).toBe(37)
+      // Verify all known resources are represented
+      expect(container.querySelectorAll('[data-currency-id]').length).toBe(expectedCount)
     })
 
     it('should clear "No currencies" message when first currency appears', () => {
