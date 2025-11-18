@@ -8,14 +8,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header">
-      <div class="brand">
+  <div class="viewport">
+    <header class="hero">
+      <div class="hero-brand">
         <p class="eyebrow">Late Stage Capitalism Sandbox</p>
         <h1>Capitalism Simulator</h1>
         <p class="tagline">Exploit loops, automate everything, industrialize your tiny town.</p>
       </div>
-      <div class="header-actions">
+      <div class="hero-utility">
         <div class="audio-controls">
           <button id="muteBtn" class="btn-icon" title="Toggle music">🔊</button>
           <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="35" title="Music volume">
@@ -24,15 +24,13 @@
       </div>
     </header>
 
-    <section class="command-panel">
+    <section class="command-deck">
       <div class="command-buttons">
         <button id="saveBtn" class="btn-primary">💾 Save</button>
         <button id="resetBtn" class="btn-secondary">♻ Soft Reset</button>
         <button id="restartBtn" class="btn-danger">🧨 Hard Reset</button>
       </div>
-      <div class="command-note">
-        <p>Autosaves every 30 seconds • Manual saves are instant • Hard reset wipes everything.</p>
-      </div>
+      <p class="command-note">Autosaves every 30 seconds • Manual saves are instant • Hard reset wipes everything.</p>
     </section>
 
     <section class="status-grid">
@@ -71,29 +69,45 @@
       </div>
     </div>
 
-    <main class="game-layout tab-content active" data-view="activities">
-      <aside class="panel skill-panel">
-        <div class="panel-header-row">
-          <div>
-            <h2>Skill Tree</h2>
-            <p class="panel-subtitle">Swap disciplines to unlock new production chains.</p>
+    <main class="dashboard tab-content active" data-view="activities">
+      <section class="dashboard-column column-left">
+        <aside class="panel skill-panel">
+          <div class="panel-header-row">
+            <div>
+              <h2>Skill Tree</h2>
+              <p class="panel-subtitle">Swap disciplines to unlock new production chains.</p>
+            </div>
           </div>
-        </div>
-        <div id="skillList" class="skill-list"></div>
-      </aside>
+          <div id="skillList" class="skill-list"></div>
+        </aside>
 
-      <section class="panel activity-panel">
-        <div class="panel-header-row">
-          <div>
-            <h2>Activity Queue</h2>
-            <p class="panel-subtitle">Click to grind manually, or assign workers to automate.</p>
+        <section class="panel upgrade-panel">
+          <div class="panel-header-row">
+            <div>
+              <h3>Research &amp; Upgrades</h3>
+              <p class="panel-subtitle">Modifiers scoped to the currently selected skill.</p>
+            </div>
           </div>
-        </div>
-        <div id="activityList" class="activity-list"></div>
+          <div id="upgradeList" class="upgrade-list"></div>
+        </section>
       </section>
 
-      <section class="right-column">
-        <div class="panel town-panel">
+      <section class="dashboard-column column-center">
+        <section class="panel activity-panel">
+          <div class="panel-header-row">
+            <div>
+              <h2>Activity Queue</h2>
+              <p class="panel-subtitle">Click to grind manually, or assign workers to automate.</p>
+            </div>
+          </div>
+          <div id="activityList" class="activity-list"></div>
+        </section>
+
+        <section class="panel active-panel" id="activeActivities"></section>
+      </section>
+
+      <section class="dashboard-column column-right">
+        <section class="panel town-panel">
           <div class="panel-header-row">
             <div>
               <h2>Urban Core</h2>
@@ -101,9 +115,9 @@
             </div>
           </div>
           <canvas id="townCanvas" class="town-canvas"></canvas>
-        </div>
+        </section>
 
-        <div class="panel building-panel">
+        <section class="panel building-panel">
           <div class="panel-header-row">
             <div>
               <h2>Construction Queue</h2>
@@ -112,21 +126,9 @@
             <span id="buildingSlots" class="building-slots-info">0/0 Slots Used</span>
           </div>
           <div id="buildingMenu" class="building-menu"></div>
-        </div>
+        </section>
 
-        <div class="panel" id="activeActivities"></div>
-
-        <div class="panel upgrade-panel">
-          <div class="panel-header-row">
-            <div>
-              <h3>Research &amp; Upgrades</h3>
-              <p class="panel-subtitle">Modifiers scoped to the currently selected skill.</p>
-            </div>
-          </div>
-          <div id="upgradeList" class="upgrade-list"></div>
-        </div>
-
-        <div class="panel worker-panel" id="workerPanel"></div>
+        <section class="panel worker-panel" id="workerPanel"></section>
       </section>
     </main>
 

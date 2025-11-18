@@ -510,9 +510,19 @@ export class ActivitySimulation {
       scale = 1 + Math.min(0.2, hitCount * 0.03)
     }
 
-    // Draw node base
+    // Draw glow halo behind resource node
+    const glowRadius = 26 * scale
+    const glowGradient = this.ctx.createRadialGradient(x, y, 6, x, y, glowRadius)
+    glowGradient.addColorStop(0, 'rgba(56, 189, 248, 0.45)')
+    glowGradient.addColorStop(1, 'rgba(15, 23, 42, 0.1)')
+    this.ctx.fillStyle = glowGradient
+    this.ctx.beginPath()
+    this.ctx.arc(x + shakeX, y + shakeY, glowRadius, 0, Math.PI * 2)
+    this.ctx.fill()
+
+    // Draw node base with reduced opacity to prevent hiding workers
     this.ctx.fillStyle = '#4a5568'
-    this.ctx.globalAlpha = 0.5
+    this.ctx.globalAlpha = 0.35
     this.ctx.beginPath()
     this.ctx.arc(x + shakeX, y + shakeY, 20 * scale, 0, Math.PI * 2)
     this.ctx.fill()
@@ -539,10 +549,18 @@ export class ActivitySimulation {
     const { x, y } = this.dropOffPosition
 
     // Draw base
-    this.ctx.fillStyle = '#2d3748'
-    this.ctx.globalAlpha = 0.5
+    const homeGradient = this.ctx.createRadialGradient(x, y, 4, x, y, 24)
+    homeGradient.addColorStop(0, 'rgba(96, 165, 250, 0.5)')
+    homeGradient.addColorStop(1, 'rgba(15, 23, 42, 0.1)')
+    this.ctx.fillStyle = homeGradient
     this.ctx.beginPath()
-    this.ctx.arc(x, y, 20, 0, Math.PI * 2)
+    this.ctx.arc(x, y, 22, 0, Math.PI * 2)
+    this.ctx.fill()
+
+    this.ctx.fillStyle = '#2d3748'
+    this.ctx.globalAlpha = 0.4
+    this.ctx.beginPath()
+    this.ctx.arc(x, y, 18, 0, Math.PI * 2)
     this.ctx.fill()
     this.ctx.globalAlpha = 1.0
 
@@ -732,16 +750,17 @@ export class ActivitySimulation {
     }
 
     // Draw shadow
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'
     this.ctx.beginPath()
-    this.ctx.ellipse(x + attackOffset, y + 12, 8 * scale, 4, 0, 0, Math.PI * 2)
+    this.ctx.ellipse(x + attackOffset, y + 12, 9 * scale, 4.5, 0, 0, Math.PI * 2)
     this.ctx.fill()
 
     // Save context state
     this.ctx.save()
 
-    // Reset transform for emoji rendering to prevent stretching
+    // Reset transform and ensure correct blending
     this.ctx.setTransform(1, 0, 0, 1, 0, 0)
+    this.ctx.globalCompositeOperation = 'source-over'
 
     // Apply rotation if needed
     if (rotation !== 0) {
@@ -753,22 +772,47 @@ export class ActivitySimulation {
     // Ensure fully opaque
     this.ctx.globalAlpha = 1.0
 
-    // Draw bright background circle behind worker for better visibility
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'
+    const workerCenterX = x + attackOffset
+    const workerCenterY = y + bobOffset + verticalOffset
+
+    // Layered halo to keep worker visible
+    const haloGradient = this.ctx.createRadialGradient(workerCenterX, workerCenterY, 0, workerCenterX, workerCenterY, 18 * scale)
+    haloGradient.addColorStop(0, 'rgba(255, 255, 255, 0.55)')
+    haloGradient.addColorStop(1, 'rgba(15, 23, 42, 0)')
+    this.ctx.fillStyle = haloGradient
     this.ctx.beginPath()
-    this.ctx.arc(x + attackOffset, y + bobOffset + verticalOffset, 12 * scale, 0, Math.PI * 2)
+    this.ctx.arc(workerCenterX, workerCenterY, 16 * scale, 0, Math.PI * 2)
     this.ctx.fill()
 
-    // Add glow effect to worker
-    this.ctx.shadowColor = '#ffffff'
-    this.ctx.shadowBlur = 8
+    // Base badge behind worker
+    this.ctx.fillStyle = 'rgba(15, 23, 42, 0.65)'
+    this.ctx.beginPath()
+    this.ctx.arc(workerCenterX, workerCenterY, 13 * scale, 0, Math.PI * 2)
+    this.ctx.fill()
 
-    // Draw worker icon with all transformations
-    const fontSize = Math.floor(16 * scale)
-    this.ctx.font = `${fontSize}px Arial`
+    // Add neon rim to separate from background
+    this.ctx.strokeStyle = 'rgba(94, 234, 212, 0.6)'
+    this.ctx.lineWidth = 3
+    this.ctx.beginPath()
+    this.ctx.arc(workerCenterX, workerCenterY, 12 * scale, 0, Math.PI * 2)
+    this.ctx.stroke()
+
+    // Add glow effect to worker glyph
+    this.ctx.shadowColor = '#67e8f9'
+    this.ctx.shadowBlur = 12
+
+    const fontSize = Math.floor(18 * scale)
+    this.ctx.font = `600 ${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`
     this.ctx.textAlign = 'center'
     this.ctx.textBaseline = 'middle'
-    this.ctx.fillText('👷', x + attackOffset, y + bobOffset + verticalOffset)
+
+    // Stroke text to maintain definition
+    this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.85)'
+    this.ctx.lineWidth = 3
+    this.ctx.strokeText('👷', workerCenterX, workerCenterY)
+
+    this.ctx.fillStyle = '#ffffff'
+    this.ctx.fillText('👷', workerCenterX, workerCenterY)
 
     // Reset shadow for other elements
     this.ctx.shadowBlur = 0
@@ -777,7 +821,7 @@ export class ActivitySimulation {
     if (worker.carrying && !worker.waitingForResource) {
       const resourceIcon = this.getResourceIcon(worker.carrying)
       this.ctx.font = '12px Arial'
-      this.ctx.fillText(resourceIcon, x + attackOffset + 10, y + bobOffset + verticalOffset - 10)
+      this.ctx.fillText(resourceIcon, workerCenterX + 12, workerCenterY - 12)
     }
 
     // Restore context state
